@@ -1,0 +1,16 @@
+[package]
+name = "scrum_poker"
+version = "0.1.0"
+authors = ["marko.lazic <markolazic@protonmail.com>"]
+edition = "2021"
+
+[dependencies]
+dioxus = "0.3.2"
+dioxus-web = "0.3.1"
+
+[profile.dev]
+opt-level = 1
+
+
+[profile.dev.package."*"]
+opt-level = 3
