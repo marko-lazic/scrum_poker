@@ -5,8 +5,12 @@ authors = ["marko.lazic <markolazic@protonmail.com>"]
 edition = "2021"
 
 [dependencies]
-dioxus = "0.3.2"
-dioxus-web = "0.3.1"
+axum = { version = "0.6.20", features = ["tokio", "ws"] }
+dioxus = "0.4.3"
+dioxus-liveview = { version = "0.4.3", features = ["axum"] }
+tokio = { version = "1.35.0", features = ["full"] }
+tower-http = { version = "0.4.0", features = ["fs"] }
+
 
 [profile.dev]
 opt-level = 1

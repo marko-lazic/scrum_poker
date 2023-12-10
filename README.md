@@ -7,7 +7,8 @@ Install Dioxus CLI
 cargo install dioxus-cli
 ```
 
-Run web app
+Run
 ```shell
-dioxus serve
+npx tailwindcss -i ./input.css -o ./public/tailwind.css --watch
+dx serve --hot-reload --platform desktop
 ```

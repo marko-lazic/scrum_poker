@@ -1,0 +1,49 @@
+[application]
+
+# App name
+name = "Scrum Poker"
+
+# The Dioxus platform to default to
+default_platform = "web"
+
+# `build` & `serve` output path
+out_dir = "dist"
+
+# The static resource path
+asset_dir = "public"
+
+[web.app]
+
+# HTML title tag content
+title = "scrum_poker"
+
+[web.watcher]
+
+# When watcher is triggered, regenerate the `index.html`
+reload_html = true
+
+# Which files or dirs will be monitored
+watch_path = ["src", "public", "Dioxus.toml"]
+
+# uncomment line below if using Router
+# index_on_404 = true
+
+# Include style or script assets
+[web.resource]
+
+# CSS style file
+style = ["tailwind.css", "style.css"]
+
+
+# Javascript code file
+script = []
+
+[web.resource.dev]
+
+# Same as [web.resource], but for development servers
+
+# CSS style file
+style = []
+
+# JavaScript files
+script = []
