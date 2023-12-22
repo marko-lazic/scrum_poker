@@ -2,3 +2,5 @@
 Cargo.lock
 /dist
 .idea
+.DS_STORE
+.vscode

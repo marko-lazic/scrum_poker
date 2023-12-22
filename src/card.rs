@@ -1,24 +1,40 @@
-use std::fmt::{Display, Formatter};
+use dioxus::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Card {
-    pub value: Option<u8>,
+#[derive(PartialEq, Props)]
+pub struct CardProps {
+    value: &'static str,
 }
 
-impl Card {
-    pub fn new (value: u8) -> Self {
-        Card { value: Some(value) }
-    }
-    pub fn none() -> Self {
-        Card { value: None }
-    }
-}
+pub fn Card(cx: Scope<CardProps>) -> Element {
+    cx.render(rsx! {
+        input { class: "hidden", r#type: "radio", id: "card-{cx.props.value}", r#name: "card" }
 
-impl Display for Card {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self.value {
-            Some(value) => write!(f, "{}", value),
-            None => write!(f, "N/a"),
+        button { class: "p-1 relative w-20 h-28 mx-auto bg-white hover:bg-slate-100 rounded-xl shadow-lg",
+            span {
+                div { class: "w-full h-full flex flex-col justify-between",
+                    div { class: "flex justify-between",
+                        img {
+                            class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
+                            src: "/public/logo_trans.png"
+                        }
+                        img {
+                            class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
+                            src: "/public/logo_trans.png"
+                        }
+                    }
+                    div { class: "flex justify-center text-3xl text-slate-500", "{cx.props.value}" }
+                    div { class: "flex justify-between",
+                        img {
+                            class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
+                            src: "/public/logo_trans.png"
+                        }
+                        img {
+                            class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
+                            src: "/public/logo_trans.png"
+                        }
+                    }
+                }
+            }
         }
-    }
+    })
 }

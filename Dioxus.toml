@@ -26,7 +26,7 @@ reload_html = true
 watch_path = ["src", "public", "Dioxus.toml"]
 
 # uncomment line below if using Router
-# index_on_404 = true
+index_on_404 = true
 
 # Include style or script assets
 [web.resource]
