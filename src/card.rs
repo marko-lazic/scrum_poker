@@ -7,9 +7,7 @@ pub struct CardProps {
 
 pub fn Card(cx: Scope<CardProps>) -> Element {
     cx.render(rsx! {
-        input { class: "hidden", r#type: "radio", id: "card-{cx.props.value}", r#name: "card" }
-
-        button { class: "p-1 relative w-20 h-28 mx-auto bg-white hover:bg-slate-100 rounded-xl shadow-lg",
+        button { class: "p-1 relative w-20 h-28 mx-auto bg-white hover:bg-slate-100 focus:bg-stone-300 rounded-xl shadow-lg",
             span {
                 div { class: "w-full h-full flex flex-col justify-between",
                     div { class: "flex justify-between",

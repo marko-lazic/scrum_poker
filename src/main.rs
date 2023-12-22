@@ -4,7 +4,7 @@ use axum::{extract::ws::WebSocketUpgrade, response::Html, routing::get, Router};
 use dioxus::prelude::*;
 use tower_http::services::ServeDir;
 
-use crate::{app::App, card::Card};
+use crate::app::App;
 
 mod app;
 mod card;
@@ -68,7 +68,7 @@ fn app(cx: Scope) -> Element {
             div { class: "p-6 max-w-sm mx-auto bg-white rounded-xl shadow-lg flex items-center space-x-4",
                 div { class: "shrink-0", img {
                     class: "h-12 w-12",
-                    src: "/public/rustore-svgrepo-com.svg",
+                    src: "/public/logo_trans.png",
                     alt: "ChitChat Logo"
                 } }
                 div {
