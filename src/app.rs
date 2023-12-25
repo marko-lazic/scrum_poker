@@ -15,19 +15,19 @@ pub fn App(cx: Scope) -> Element {
             div { class: "sm:mx-auto sm:max-w-4xl sm:rounded-lg sm:px-10",
                 div { class: "divide-y divide-gray-300/50",
                     div { class: "flex flex-wrap gap-4",
-                        Card { value: "?" }
-                        Card { value: "☕️" }
-                        Card { value: "0" }
-                        Card { value: "0.5" }
-                        Card { value: "1" }
-                        Card { value: "2" }
-                        Card { value: "3" }
-                        Card { value: "5" }
-                        Card { value: "8" }
-                        Card { value: "13" }
-                        Card { value: "20" }
-                        Card { value: "40" }
-                        Card { value: "100" }
+                        Card { value: "?".into() }
+                        Card { value: "☕️".into() }
+                        Card { value: "0".into() }
+                        Card { value: "0.5".into() }
+                        Card { value: "1".into() }
+                        Card { value: "2".into() }
+                        Card { value: "3".into() }
+                        Card { value: "5".into() }
+                        Card { value: "8".into() }
+                        Card { value: "13".into() }
+                        Card { value: "20".into() }
+                        Card { value: "40".into() }
+                        Card { value: "100".into() }
                     }
                 }
             }
