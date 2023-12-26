@@ -9,6 +9,7 @@ use crate::app::App;
 mod app;
 mod card;
 mod demo;
+mod table;
 
 #[tokio::main]
 async fn main() {
