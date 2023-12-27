@@ -9,7 +9,12 @@ axum = { version = "0.6.20", features = ["tokio", "ws"] }
 dioxus = "0.4.3"
 fermi = "0.4.3"
 dioxus-liveview = { version = "0.4.3", features = ["axum"] }
-tokio = { version = "1.35.0", features = ["full"] }
+tokio = { version = "1.35.0", features = ["full", "tracing"] }
+surrealdb = { git = "https://github.com/surrealdb/surrealdb.git", tag = "v1.1.0-beta.1", features = [
+    "kv-mem",
+] }
+futures = "0.3.29"
+serde = "1.0.167"
 tower-http = { version = "0.4.0", features = ["fs"] }
 
 

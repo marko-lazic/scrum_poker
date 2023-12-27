@@ -8,7 +8,8 @@ use crate::app::App;
 
 mod app;
 mod card;
-mod demo;
+mod db;
+mod room;
 mod table;
 
 #[tokio::main]
@@ -62,38 +63,5 @@ async fn main() {
 }
 
 fn app(cx: Scope) -> Element {
-    cx.render(
-        rsx! {
-            App {}
-            div { class: "h-10" }
-            div { class: "p-6 max-w-sm mx-auto bg-white rounded-xl shadow-lg flex items-center space-x-4",
-                div { class: "shrink-0", img {
-                    class: "h-12 w-12",
-                    src: "/public/logo_trans.png",
-                    alt: "ChitChat Logo"
-                } }
-                div {
-                    "ChitChat"
-                    p { class: "text-slate-500", "You have a new message!" }
-                }
-            }
-            div { class: "h-10" }
-            div { class: "py-8 px-8 max-w-sm mx-auto bg-white rounded-xl shadow-lg space-y-2 sm:py-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-6",
-                img {
-                    class: "block mx-auto h-24 rounded-full sm:mx-0 sm:shrink-0",
-                    src: "/public/logo_trans.png",
-                    alt: "Scrum poker logo"
-                }
-                div { class: "text-center space-y-2 sm:text-left",
-                    div { class: "space-y-0.5",
-                        p { class: "text-lg text-black font-semibold", "Scrum Poker Online" }
-                        p { class: "text-slate-500 font-medium", "For Software Engineers" }
-                    }
-                    button { class: "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2",
-                        "Play Now"
-                    }
-                }
-            }
-            div { class: "h-10" }
-        })
+    cx.render(rsx! { App {} })
 }
