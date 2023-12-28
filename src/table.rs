@@ -3,17 +3,16 @@ use fermi::*;
 use futures::StreamExt;
 
 use crate::pool::use_pool;
-use crate::room::{room_results, ROOM};
+use crate::room::{get_room, Room, ROOM};
 use crate::RESULTS;
 
 #[component]
 pub fn Table(cx: Scope) -> Element {
     let pool = use_pool(cx);
-    let results = use_read(cx, &RESULTS);
-    let borka_results = use_state(cx, || "-".to_string());
-
+    let _results = use_read(cx, &RESULTS);
+    let room = use_state(cx, || Room::new(("room", "two").into()));
     use_future(cx, (), move |_| {
-        let borka_results = borka_results.clone();
+        let room = room.clone();
         let pool = pool.clone();
         async move {
             let db = pool
@@ -21,10 +20,18 @@ pub fn Table(cx: Scope) -> Element {
                 .get()
                 .await
                 .expect("Failed to get connection from pool");
-            let mut rooms = db.select(ROOM).range("one".."two").live().await.unwrap();
+            if let Some(initial_room) = db.select((ROOM, "two")).await.unwrap() {
+                room.set(initial_room);
+            }
+
+            let mut rooms = db.select((ROOM, "two")).live().await.unwrap();
 
             while let Some(notification) = rooms.next().await {
-                borka_results.set(room_results(notification));
+                let result = get_room(notification);
+                match result {
+                    Ok(value) => room.set(value),
+                    Err(error) => println!("{}", error),
+                }
             }
         }
     });
@@ -38,17 +45,11 @@ pub fn Table(cx: Scope) -> Element {
                 }
             }
             tbody {
-                tr { class: "bg-white border-b dark:bg-gray-800 dark:border-gray-700",
-                    td { class: "py-3 px-6", "Marko" }
-                    td { class: "py-3 px-6 text-center", "{results}" }
-                }
-                tr { class: "bg-white border-b dark:bg-gray-800 dark:border-gray-700",
-                    td { class: "py-3 px-6", "Borka" }
-                    td { class: "py-3 px-6 text-center", "{borka_results}" }
-                }
-                tr { class: "bg-white border-b dark:bg-gray-800 dark:border-gray-700",
-                    td { class: "py-3 px-6", "Ilija" }
-                    td { class: "py-3 px-6 text-center", "-" }
+                for participant in room.participants.clone() {
+                    tr { class: "bg-white border-b dark:bg-gray-800 dark:border-gray-700",
+                        td { class: "py-3 px-6", "{participant.name}" }
+                        td { class: "py-3 px-6 text-center", "{participant.estimate}" }
+                    }
                 }
             }
         }

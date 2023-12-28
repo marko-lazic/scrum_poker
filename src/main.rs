@@ -15,6 +15,7 @@ use crate::{
 mod app;
 mod card;
 mod db;
+mod error;
 mod pool;
 mod room;
 mod table;
