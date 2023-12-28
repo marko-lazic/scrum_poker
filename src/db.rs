@@ -1,29 +1,24 @@
-// use surrealdb::engine::any::Any;
-// use surrealdb::opt::auth::Root;
-// use surrealdb::Surreal;
+use dioxus::prelude::*;
+use surrealdb::engine::any::{connect, Any};
+use surrealdb::opt::auth::Root;
+use surrealdb::Surreal;
 
-// pub static DB: AtomRef<Surreal<Any>> = AtomRef(|_| db_block());
+pub type Db = Surreal<Any>;
 
-// pub type Db = Surreal<Any>;
+pub async fn init_db_connection() -> Db {
+    println!("Init db connection");
+    let db = connect("ws://localhost:8000").await.unwrap();
 
-// fn db_block() -> Surreal<Any> {
-//     tokio::runtime::Builder::new_multi_thread()
-//         .enable_all()
-//         .build()
-//         .unwrap()
-//         .block_on(db())
-// }
+    db.signin(Root {
+        username: "root",
+        password: "root",
+    })
+    .await
+    .unwrap();
+    db.use_ns("test").use_db("test").await.unwrap();
+    db
+}
 
-// pub async fn db() -> Surreal<Any> {
-//     let db = connect("ws://localhost:8000").await.unwrap();
-
-//     db.signin(Root {
-//         username: "root",
-//         password: "root",
-//     })
-//     .await
-//     .unwrap();
-//     db.use_ns("test").use_db("test").await.unwrap();
-
-//     db
-// }
+pub fn use_db(cx: &ScopeState) -> &UseSharedState<Db> {
+    use_shared_state::<Db>(cx).expect("Db not provided")
+}

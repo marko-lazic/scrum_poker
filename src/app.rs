@@ -1,15 +1,10 @@
 use dioxus::prelude::*;
-use fermi::prelude::*;
 
 use crate::card::Card;
 use crate::table::Table;
 
-pub static RESULTS: Atom<String> = Atom(|_| "".to_string());
-
 #[component]
 pub fn App(cx: Scope) -> Element {
-    use_init_atom_root(cx);
-
     cx.render(rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {

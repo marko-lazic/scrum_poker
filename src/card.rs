@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dioxus::prelude::*;
 use fermi::*;
 
-use crate::app::RESULTS;
+use crate::RESULTS;
 
 #[derive(PartialEq, Props)]
 pub struct CardProps {
