@@ -1,8 +1,5 @@
 use serde::Deserialize;
 use surrealdb::sql::Thing;
-use surrealdb::Notification;
-
-use crate::error::ScError;
 
 pub const ROOM: &str = "room";
 
@@ -26,16 +23,5 @@ impl Room {
             show: false,
             participants: vec![],
         }
-    }
-}
-
-pub fn get_room(result: surrealdb::Result<Notification<Room>>) -> Result<Room, ScError> {
-    match result {
-        Ok(notification) => {
-            let _action = notification.action;
-            let room = notification.data;
-            Ok(room)
-        }
-        Err(error) => Err(error.into()),
     }
 }

@@ -1,11 +1,16 @@
 use dioxus::prelude::*;
+use fermi::use_init_atom_root;
 
 use crate::card::Card;
 use crate::table::Table;
+use crate::AppProps;
 
 #[component]
-pub fn App(cx: Scope) -> Element {
+pub fn App(cx: Scope<AppProps>) -> Element {
+    use_init_atom_root(cx);
+    use_shared_state_provider(cx, || cx.props.pool.clone());
     cx.render(rsx! {
+        div { h1 { "{cx.props.session_id}" } }
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {
                 src: "/public/beams.jpg",
