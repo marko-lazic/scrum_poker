@@ -86,12 +86,7 @@ async fn main() {
         .unwrap();
 }
 
-async fn root(
-    State(state): State<AppState>,
-    session: SessionSurrealSession<Client>,
-) -> Html<String> {
-    let session_id = session.get_session_id();
-    println!("Session id {:?}", session_id.uuid());
+async fn root(State(state): State<AppState>) -> Html<String> {
     let addr = state.addr;
     Html(format!(
         r#"
@@ -119,7 +114,6 @@ async fn ws_handler(
 ) -> Response {
     let get_session_id = session.get_session_id();
     let session_id = get_session_id.uuid();
-    println!("WS socket session id {session_id:?}");
     let app_props = AppProps {
         pool: state.pool,
         session_id,
