@@ -1,8 +1,6 @@
 use serde::Deserialize;
 use surrealdb::sql::Thing;
 
-pub const ROOM: &str = "room";
-
 #[derive(PartialEq, Clone, Debug, Deserialize)]
 pub struct Participant {
     pub name: String,

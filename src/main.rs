@@ -1,16 +1,16 @@
 #![allow(non_snake_case)]
 
-use std::sync::Arc;
-
 use axum::{
-    extract::{ws::WebSocketUpgrade, State},
-    response::{Html, Response},
+    extract::{ws::WebSocketUpgrade, Path, State},
+    response::{Html, Redirect, Response},
     routing::get,
     Router,
 };
 use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
+use nanoid::nanoid;
+use std::sync::Arc;
 
 use fermi::Atom;
 use surrealdb::engine::remote::ws::Client;
@@ -54,6 +54,7 @@ impl AppState {
 pub struct AppProps {
     pool: Arc<Pool>,
     session_id: Uuid,
+    room_id: String,
 }
 
 #[tokio::main]
@@ -71,10 +72,9 @@ async fn main() {
 
     let routes = Router::new()
         .nest_service("/public", ServeDir::new("public"))
-        // The root route contains the glue code to connect to the WebSocket
         .route("/", get(root))
-        // The WebSocket route is what Dioxus uses to communicate with the browser
-        .route("/ws", get(ws_handler))
+        .route("/:room_id", get(room_handler))
+        .route("/ws/:room_id", get(ws_handler))
         .with_state(app_state)
         .layer(SessionLayer::new(session_store));
 
@@ -86,7 +86,13 @@ async fn main() {
         .unwrap();
 }
 
-async fn root(State(state): State<AppState>) -> Html<String> {
+async fn root() -> Redirect {
+    let room_id = nanoid!(10);
+    println!("Creating room id {}", room_id);
+    Redirect::to(format!("/{room_id}").as_str())
+}
+
+async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>) -> Html<String> {
     let addr = state.addr;
     Html(format!(
         r#"
@@ -103,20 +109,24 @@ async fn root(State(state): State<AppState>) -> Html<String> {
     </html>
     "#,
         // Create the glue code to connect to the WebSocket on the "/ws" route
-        glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws"))
+        glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws/{room_id}"))
     ))
 }
 
 async fn ws_handler(
+    Path(room_id): Path<String>,
     ws: WebSocketUpgrade,
     session: SessionSurrealSession<Client>,
     State(state): State<AppState>,
 ) -> Response {
     let get_session_id = session.get_session_id();
     let session_id = get_session_id.uuid();
+    println!("Joining session id {} room id {}", session_id, room_id);
+
     let app_props = AppProps {
         pool: state.pool,
         session_id,
+        room_id,
     };
 
     ws.on_upgrade(move |socket| async move {
