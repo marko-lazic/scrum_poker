@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 
 use axum::{
-    extract::{ws::WebSocketUpgrade, Path, State},
+    extract::{
+        ws::{WebSocket, WebSocketUpgrade},
+        Path, State,
+    },
     response::{Html, Redirect, Response},
     routing::get,
     Router,
@@ -121,19 +124,23 @@ async fn ws_handler(
 ) -> Response {
     let get_session_id = session.get_session_id();
     let session_id = get_session_id.uuid();
+    // TODO: Check if room exists. Create new or join existing room.
+    // TODO: Give user a handle to a room
+    // TODO: Allow user to change estimate for himself
     println!("Joining session id {} room id {}", session_id, room_id);
 
+    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id))
+}
+
+async fn websocket(stream: WebSocket, state: AppState, session_id: Uuid, room_id: String) {
     let app_props = AppProps {
         pool: state.pool,
         session_id,
         room_id,
     };
 
-    ws.on_upgrade(move |socket| async move {
-        // When the WebSocket is upgraded, launch the LiveView with the app component
-        _ = state
-            .view
-            .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(socket), App, app_props)
-            .await;
-    })
+    _ = state
+        .view
+        .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)
+        .await;
 }

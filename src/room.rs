@@ -1,25 +1,57 @@
-use serde::Deserialize;
-use surrealdb::sql::Thing;
+use std::{
+    collections::HashSet,
+    hash::{Hash, Hasher},
+    sync::{Arc, Mutex},
+};
 
-#[derive(PartialEq, Clone, Debug, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Participant {
-    pub name: String,
-    pub estimate: String,
+    pub session_id: Arc<String>,
+    pub name: Arc<String>,
+    pub estimate: Arc<String>,
 }
 
-#[derive(PartialEq, Clone, Debug, Deserialize)]
+impl Hash for Participant {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.session_id.hash(state);
+    }
+}
+
+impl PartialEq for Participant {
+    fn eq(&self, other: &Self) -> bool {
+        self.session_id == other.session_id
+    }
+}
+
+impl Eq for Participant {}
+
+#[derive(Debug)]
 pub struct Room {
-    pub id: Thing,
+    pub room_id: Arc<String>,
     pub show: bool,
-    pub participants: Vec<Participant>,
+    pub participants: Mutex<HashSet<Participant>>,
 }
 
 impl Room {
-    pub fn new(id: Thing) -> Self {
+    pub fn new(room_id: String) -> Self {
         Room {
-            id,
+            room_id: room_id.into(),
             show: false,
-            participants: vec![],
+            participants: Mutex::new(HashSet::new()),
         }
     }
 }
+
+impl Hash for Room {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.room_id.hash(state);
+    }
+}
+
+impl PartialEq for Room {
+    fn eq(&self, other: &Self) -> bool {
+        self.room_id == other.room_id
+    }
+}
+
+impl Eq for Room {}
