@@ -5,12 +5,11 @@ use tokio::sync::{
     oneshot, RwLock,
 };
 
-use crate::{database, room::Room};
-
-#[derive(Clone)]
-pub struct RoomChannel {
-    pub tx: broadcast::Sender<String>,
-}
+use crate::{
+    channel::{RoomChannel, RoomMessage},
+    database,
+    room::Room,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -62,7 +61,7 @@ impl AppState {
 
     pub async fn create_channel(&self, room_id: Arc<String>) -> RoomChannel {
         let mut w_rooms = self.room_channels.write().await;
-        let (tx, _) = broadcast::channel::<String>(10);
+        let (tx, _) = broadcast::channel::<RoomMessage>(10);
         let channel = RoomChannel { tx: tx.clone() };
         w_rooms.insert(room_id.to_string(), channel.clone());
         return channel;

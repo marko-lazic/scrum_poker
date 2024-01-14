@@ -12,11 +12,11 @@ use axum::{
 use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
+use channel::{RoomChannel, RoomMessage};
 use nanoid::nanoid;
+use room::Participant;
 use std::sync::Arc;
-use tokio::sync::broadcast::error::SendError;
 
-use fermi::Atom;
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
@@ -25,19 +25,20 @@ use crate::{app::App, state::AppState};
 
 mod app;
 mod card;
+mod channel;
 mod database;
 mod error;
 mod room;
+mod session;
 mod state;
 mod table;
-
-pub static RESULTS: Atom<String> = Atom(|_| "".to_string());
 
 #[derive(Clone)]
 pub struct AppProps {
     pool: Arc<database::Pool>,
     session_id: Uuid,
     room_id: Arc<String>,
+    channel: RoomChannel,
 }
 
 #[tokio::main]
@@ -107,34 +108,31 @@ async fn ws_handler(
     let room_id: Arc<String> = Arc::from(room_id);
 
     let channel = state.get_or_create_room_channel(room_id.clone()).await;
-    // TODO: Give user a handle to a room
-    // TODO: Allow user to change estimate for himself
-    let result = channel.tx.send("Participant message!".to_string());
-    print_result(result);
 
-    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id))
+    let name = names::Generator::default().next().unwrap_or_default();
+    let participant = Participant::new(session_id, Arc::new(name));
+    let msg = RoomMessage::AddParticipant(participant);
+    channel.send(msg);
+
+    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel))
 }
 
-async fn websocket(stream: WebSocket, state: AppState, session_id: Uuid, room_id: Arc<String>) {
+async fn websocket(
+    stream: WebSocket,
+    state: AppState,
+    session_id: Uuid,
+    room_id: Arc<String>,
+    channel: RoomChannel,
+) {
     let app_props = AppProps {
         pool: state.pool,
         session_id,
         room_id,
+        channel,
     };
 
     _ = state
         .view
         .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)
         .await;
-}
-
-fn print_result(result: Result<usize, SendError<String>>) {
-    match result {
-        Ok(_) => {
-            // println!("Message sent successfully");
-        }
-        Err(err) => {
-            println!("Error sending message: {}", err);
-        }
-    }
 }

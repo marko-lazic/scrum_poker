@@ -9,6 +9,8 @@ use crate::AppProps;
 pub fn App(cx: Scope<AppProps>) -> Element {
     use_init_atom_root(cx);
     use_shared_state_provider(cx, || cx.props.pool.clone());
+    use_shared_state_provider(cx, || cx.props.channel.clone());
+    use_shared_state_provider(cx, || cx.props.session_id);
     cx.render(rsx! {
         div {
             h1 { "{cx.props.session_id}" }

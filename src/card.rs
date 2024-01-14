@@ -2,8 +2,12 @@ use std::sync::Arc;
 
 use dioxus::prelude::*;
 use fermi::*;
+use uuid::Uuid;
 
-use crate::RESULTS;
+use crate::{
+    channel::{use_room_channel, EstimateData},
+    session::use_session_id,
+};
 
 #[derive(PartialEq, Props)]
 pub struct CardProps {
@@ -12,13 +16,18 @@ pub struct CardProps {
 
 #[component]
 pub fn Card(cx: Scope<CardProps>) -> Element {
-    let set_results = use_set(cx, &RESULTS);
+    let channel = use_room_channel(cx);
+    let session_id = use_session_id(cx);
     cx.render(rsx! {
         button {
             class: "select-none p-1 relative w-12 md:w-20 h-14 md:h-28 mx-auto bg-white hover:bg-slate-100 focus:bg-slate-400 rounded-xl shadow-lg text-2xl md:text-3xl text-slate-500 focus:text-slate-50",
             onclick: move |_| {
-                set_results(cx.props.value.to_string());
                 println!("Clicked {:?}", cx.props.value);
+                let e = EstimateData {
+                    session_id: session_id.read().clone(),
+                    value: cx.props.value.clone(),
+                };
+                channel.write().send(crate::channel::RoomMessage::Estimate(e));
             },
             span {
                 div { class: "flex flex-col w-full h-full justify-between",
