@@ -6,7 +6,7 @@ use std::{
 
 use tokio::sync::oneshot;
 
-use tokio::sync::broadcast::Sender;
+use tokio::sync::broadcast;
 
 #[derive(Debug, Clone)]
 pub struct Participant {
@@ -45,7 +45,7 @@ impl Room {
         }
     }
 
-    pub async fn run(self, tx: Sender<String>, ready_notifier: oneshot::Sender<()>) {
+    pub async fn run(self, tx: broadcast::Sender<String>, ready_notifier: oneshot::Sender<()>) {
         let mut rx = tx.subscribe();
         println!("Created room task {}", self.room_id);
         let _ = ready_notifier.send(());

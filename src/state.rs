@@ -1,29 +1,29 @@
 use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{
-    broadcast::{self, Sender},
+    broadcast::{self},
     RwLock,
 };
 
-use crate::pool::{Manager, Pool};
+use crate::database;
 
 #[derive(Clone)]
 pub struct RoomChannel {
-    pub tx: Sender<String>,
+    pub tx: broadcast::Sender<String>,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub addr: std::net::SocketAddr,
-    pub pool: Arc<Pool>,
+    pub pool: Arc<database::Pool>,
     pub view: dioxus_liveview::LiveViewPool,
     pub room_channels: Arc<RwLock<HashMap<String, RoomChannel>>>,
 }
 
 impl AppState {
     pub fn new() -> AppState {
-        let mgr = Manager {};
-        let pool = Pool::builder(mgr).max_size(50).build().unwrap();
+        let mgr = database::Manager {};
+        let pool = database::Pool::builder(mgr).max_size(50).build().unwrap();
         AppState {
             addr: ([127, 0, 0, 1], 3030).into(),
             pool: Arc::new(pool),

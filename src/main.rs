@@ -21,12 +21,12 @@ use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
-use crate::{app::App, pool::Pool, room::Room, state::AppState};
+use crate::{app::App, room::Room, state::AppState};
 
 mod app;
 mod card;
+mod database;
 mod error;
-mod pool;
 mod room;
 mod state;
 mod table;
@@ -35,7 +35,7 @@ pub static RESULTS: Atom<String> = Atom(|_| "".to_string());
 
 #[derive(Clone)]
 pub struct AppProps {
-    pool: Arc<Pool>,
+    pool: Arc<database::Pool>,
     session_id: Uuid,
     room_id: Arc<String>,
 }
