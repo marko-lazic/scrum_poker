@@ -37,6 +37,10 @@ impl RoomChannel {
             }
         }
     }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<RoomMessage> {
+        return self.tx.subscribe();
+    }
 }
 
 pub fn use_room_channel(cx: &ScopeState) -> &UseSharedState<RoomChannel> {
