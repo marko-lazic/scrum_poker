@@ -14,14 +14,14 @@ use axum_session::{
 };
 use nanoid::nanoid;
 use std::sync::Arc;
-use tokio::sync::{broadcast::error::SendError, oneshot};
+use tokio::sync::broadcast::error::SendError;
 
 use fermi::Atom;
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
-use crate::{app::App, room::Room, state::AppState};
+use crate::{app::App, state::AppState};
 
 mod app;
 mod card;
@@ -106,29 +106,11 @@ async fn ws_handler(
     let session_id = get_session_id.uuid();
     let room_id: Arc<String> = Arc::from(room_id);
 
-    let channel = state.find_channel(room_id.clone()).await;
-    if channel.is_some() {
-        // Room already exists
-        let tx = channel.unwrap().tx;
-        let result = tx.send("User joined to an existing room".to_string());
-        print_result(result);
-    } else {
-        // Create new room task
-        let (ready_notifier, ready_receiver) = oneshot::channel();
-        let channel = state.create_channel(room_id.clone()).await;
-        let room_id = room_id.clone();
-        let tx = channel.tx.clone();
-        tokio::spawn(async move {
-            let room = Room::new(room_id.to_string());
-            room.run(tx, ready_notifier).await;
-        });
-
-        ready_receiver.await.ok();
-        // TODO: Give user a handle to a room
-        // TODO: Allow user to change estimate for himself
-        let result = channel.tx.send("Created room and user joined".to_string());
-        print_result(result);
-    }
+    let channel = state.get_or_create_room_channel(room_id.clone()).await;
+    // TODO: Give user a handle to a room
+    // TODO: Allow user to change estimate for himself
+    let result = channel.tx.send("Participant message!".to_string());
+    print_result(result);
 
     ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id))
 }

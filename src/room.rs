@@ -47,7 +47,7 @@ impl Room {
 
     pub async fn run(self, tx: broadcast::Sender<String>, ready_notifier: oneshot::Sender<()>) {
         let mut rx = tx.subscribe();
-        println!("Created room task {}", self.room_id);
+        println!("Room task {} is ready!", self.room_id);
         let _ = ready_notifier.send(());
 
         loop {

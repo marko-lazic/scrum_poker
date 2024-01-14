@@ -2,10 +2,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{
     broadcast::{self},
-    RwLock,
+    oneshot, RwLock,
 };
 
-use crate::database;
+use crate::{database, room::Room};
 
 #[derive(Clone)]
 pub struct RoomChannel {
@@ -30,6 +30,29 @@ impl AppState {
             view: dioxus_liveview::LiveViewPool::new(),
             room_channels: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    pub async fn get_or_create_room_channel(&self, room_id: Arc<String>) -> RoomChannel {
+        let channel = self.find_channel(room_id.clone()).await;
+        if channel.is_some() {
+            println!("User gets existing room channel");
+            return channel.unwrap();
+        } else {
+            return self.spawn_room(room_id.clone()).await;
+        }
+    }
+
+    pub async fn spawn_room(&self, room_id: Arc<String>) -> RoomChannel {
+        let (ready_notifier, ready_receiver) = oneshot::channel();
+        let channel = self.create_channel(room_id.clone()).await;
+        let tx = channel.tx.clone();
+        tokio::spawn(async move {
+            let room = Room::new(room_id.to_string());
+            room.run(tx, ready_notifier).await;
+        });
+
+        ready_receiver.await.ok();
+        return channel;
     }
 
     pub async fn find_channel(&self, room_id: Arc<String>) -> Option<RoomChannel> {
