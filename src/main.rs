@@ -14,50 +14,30 @@ use axum_session::{
 };
 use nanoid::nanoid;
 use std::sync::Arc;
+use tokio::sync::{broadcast::error::SendError, oneshot};
 
 use fermi::Atom;
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
-use crate::{
-    app::App,
-    pool::{Manager, Pool},
-};
+use crate::{app::App, pool::Pool, room::Room, state::AppState};
 
 mod app;
 mod card;
 mod error;
 mod pool;
 mod room;
+mod state;
 mod table;
 
 pub static RESULTS: Atom<String> = Atom(|_| "".to_string());
 
 #[derive(Clone)]
-pub struct AppState {
-    pub addr: std::net::SocketAddr,
-    pub pool: Arc<Pool>,
-    pub view: dioxus_liveview::LiveViewPool,
-}
-
-impl AppState {
-    fn new() -> AppState {
-        let mgr = Manager {};
-        let pool = Pool::builder(mgr).max_size(50).build().unwrap();
-        AppState {
-            addr: ([127, 0, 0, 1], 3030).into(),
-            pool: Arc::new(pool),
-            view: dioxus_liveview::LiveViewPool::new(),
-        }
-    }
-}
-
-#[derive(Clone)]
 pub struct AppProps {
     pool: Arc<Pool>,
     session_id: Uuid,
-    room_id: String,
+    room_id: Arc<String>,
 }
 
 #[tokio::main]
@@ -124,15 +104,36 @@ async fn ws_handler(
 ) -> Response {
     let get_session_id = session.get_session_id();
     let session_id = get_session_id.uuid();
-    // TODO: Check if room exists. Create new or join existing room.
-    // TODO: Give user a handle to a room
-    // TODO: Allow user to change estimate for himself
-    println!("Joining session id {} room id {}", session_id, room_id);
+    let room_id: Arc<String> = Arc::from(room_id);
+
+    let channel = state.find_channel(room_id.clone()).await;
+    if channel.is_some() {
+        // Room already exists
+        let tx = channel.unwrap().tx;
+        let result = tx.send("User joined to an existing room".to_string());
+        print_result(result);
+    } else {
+        // Create new room task
+        let (ready_notifier, ready_receiver) = oneshot::channel();
+        let channel = state.create_channel(room_id.clone()).await;
+        let room_id = room_id.clone();
+        let tx = channel.tx.clone();
+        tokio::spawn(async move {
+            let room = Room::new(room_id.to_string());
+            room.run(tx, ready_notifier).await;
+        });
+
+        ready_receiver.await.ok();
+        // TODO: Give user a handle to a room
+        // TODO: Allow user to change estimate for himself
+        let result = channel.tx.send("Created room and user joined".to_string());
+        print_result(result);
+    }
 
     ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id))
 }
 
-async fn websocket(stream: WebSocket, state: AppState, session_id: Uuid, room_id: String) {
+async fn websocket(stream: WebSocket, state: AppState, session_id: Uuid, room_id: Arc<String>) {
     let app_props = AppProps {
         pool: state.pool,
         session_id,
@@ -143,4 +144,15 @@ async fn websocket(stream: WebSocket, state: AppState, session_id: Uuid, room_id
         .view
         .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)
         .await;
+}
+
+fn print_result(result: Result<usize, SendError<String>>) {
+    match result {
+        Ok(_) => {
+            // println!("Message sent successfully");
+        }
+        Err(err) => {
+            println!("Error sending message: {}", err);
+        }
+    }
 }
