@@ -25,13 +25,13 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
                 let channel = channel.write().clone();
                 let session_id = session_id.read().clone();
                 let value = cx.props.value.clone();
-                cx.spawn(async move {
+                async move {
                     let e = EstimateData {
                         session_id,
                         value: value,
                     };
                     channel.send(RoomRequest::Estimate(e)).await;
-                })
+                }
             },
             span {
                 div { class: "flex flex-col w-full h-full justify-between",
