@@ -4,12 +4,11 @@ use std::{
     sync::Arc,
 };
 
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{mpsc, oneshot, Mutex};
 
-use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::channel::RoomMessage;
+use crate::channel::{RoomMessage, RoomRequest, RoomResponse};
 
 #[derive(Debug, Clone)]
 pub struct Participant {
@@ -60,28 +59,24 @@ impl Room {
 
     pub async fn run(
         &self,
-        tx: broadcast::Sender<RoomMessage>,
+        mut rx: mpsc::Receiver<RoomMessage>,
         ready_notifier: oneshot::Sender<()>,
     ) {
-        let mut rx = tx.subscribe();
         println!("Room task {} is ready!", self.room_id);
         let _ = ready_notifier.send(());
 
         loop {
-            let result = rx.recv().await;
-            match result {
-                Ok(msg) => {
-                    self.update_room(msg).await;
-                }
-                Err(err) => println!("Received err: {}, {:?}", self.room_id, err),
+            while let Some((request, response)) = rx.recv().await {
+                self.update_room(request).await;
+                response.send(RoomResponse::Ok).unwrap();
             }
         }
     }
 
-    async fn update_room(&self, msg: RoomMessage) {
-        match msg {
-            RoomMessage::AddParticipant(p) => self.insert_participant(p).await,
-            RoomMessage::Estimate(e) => println!("Estimate {:?}", e),
+    async fn update_room(&self, request: RoomRequest) {
+        match request {
+            RoomRequest::AddParticipant(p) => self.insert_participant(p).await,
+            RoomRequest::Estimate(e) => println!("Estimate {:?}", e),
         }
     }
 

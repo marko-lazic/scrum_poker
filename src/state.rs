@@ -1,12 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::{
-    broadcast::{self},
-    oneshot, RwLock,
-};
+use tokio::sync::{mpsc, oneshot, RwLock};
 
 use crate::{
-    channel::{RoomChannel, RoomMessage},
+    channel::{RoomChannel, RoomMessage, RoomRequest, RoomResponse},
     database,
     room::Room,
 };
@@ -43,15 +40,15 @@ impl AppState {
 
     pub async fn spawn_room(&self, room_id: Arc<String>) -> RoomChannel {
         let (ready_notifier, ready_receiver) = oneshot::channel();
-        let channel = self.create_channel(room_id.clone()).await;
-        let tx = channel.tx.clone();
+        let (room_tx, room_rx) = self.create_channel(room_id.clone()).await;
+
         tokio::spawn(async move {
             let room = Room::new(room_id.to_string());
-            room.run(tx, ready_notifier).await;
+            room.run(room_rx, ready_notifier).await;
         });
 
         ready_receiver.await.ok();
-        return channel;
+        return RoomChannel { tx: room_tx };
     }
 
     pub async fn find_channel(&self, room_id: Arc<String>) -> Option<RoomChannel> {
@@ -59,11 +56,13 @@ impl AppState {
         return r_rooms.get(&room_id.to_string()).cloned();
     }
 
-    pub async fn create_channel(&self, room_id: Arc<String>) -> RoomChannel {
+    pub async fn create_channel(
+        &self,
+        room_id: Arc<String>,
+    ) -> (mpsc::Sender<RoomMessage>, mpsc::Receiver<RoomMessage>) {
         let mut w_rooms = self.room_channels.write().await;
-        let (tx, _) = broadcast::channel::<RoomMessage>(10);
-        let channel = RoomChannel { tx: tx.clone() };
-        w_rooms.insert(room_id.to_string(), channel.clone());
-        return channel;
+        let (tx, rx) = mpsc::channel::<(RoomRequest, oneshot::Sender<RoomResponse>)>(10);
+        w_rooms.insert(room_id.to_string(), RoomChannel { tx: tx.clone() });
+        return (tx, rx);
     }
 }

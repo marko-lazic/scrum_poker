@@ -4,15 +4,20 @@ use dioxus::{
     core::ScopeState,
     hooks::{use_shared_state, UseSharedState},
 };
-use tokio::sync::broadcast;
+use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
 use crate::room::Participant;
 
 #[derive(Clone, Debug)]
-pub enum RoomMessage {
+pub enum RoomRequest {
     AddParticipant(Participant),
     Estimate(EstimateData),
+}
+
+#[derive(Clone, Debug)]
+pub enum RoomResponse {
+    Ok,
 }
 
 #[derive(Clone, Debug)]
@@ -21,26 +26,36 @@ pub struct EstimateData {
     pub value: Arc<str>,
 }
 
+pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
+
 #[derive(Clone)]
 pub struct RoomChannel {
-    pub tx: broadcast::Sender<RoomMessage>,
+    pub tx: mpsc::Sender<RoomMessage>,
 }
 
 impl RoomChannel {
-    pub fn send(&self, msg: RoomMessage) {
-        match self.tx.send(msg) {
-            Ok(_) => {
-                // println!("Message sent successfully");
+    pub async fn send(&self, msg: RoomRequest) -> RoomResponse {
+        let tx = self.tx.clone();
+        let result = tokio::spawn(async move {
+            let (resp_tx, resp_rx) = oneshot::channel();
+
+            match tx.send((msg, resp_tx)).await {
+                Ok(_) => {
+                    // println!("Message sent successfully");
+                }
+                Err(err) => {
+                    println!("Error sending message: {}", err);
+                }
             }
-            Err(err) => {
-                println!("Error sending message: {}", err);
-            }
-        }
+
+            return resp_rx.await.unwrap();
+        });
+        return result.await.unwrap();
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<RoomMessage> {
-        return self.tx.subscribe();
-    }
+    // pub fn subscribe(&self) -> broadcast::Receiver<(RoomMessage, oneshot::Sender<RoomResponse>)> {
+    //     return self.tx.subscribe();
+    // }
 }
 
 pub fn use_room_channel(cx: &ScopeState) -> &UseSharedState<RoomChannel> {

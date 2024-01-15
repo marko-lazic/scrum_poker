@@ -12,7 +12,7 @@ use axum::{
 use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
-use channel::{RoomChannel, RoomMessage};
+use channel::{RoomChannel, RoomRequest};
 use nanoid::nanoid;
 use room::Participant;
 use std::sync::Arc;
@@ -111,8 +111,8 @@ async fn ws_handler(
 
     let name = names::Generator::default().next().unwrap_or_default();
     let participant = Participant::new(session_id, Arc::new(name));
-    let msg = RoomMessage::AddParticipant(participant);
-    channel.send(msg);
+    let msg = RoomRequest::AddParticipant(participant);
+    channel.send(msg).await;
 
     ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel))
 }
