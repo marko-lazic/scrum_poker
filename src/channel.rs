@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use dioxus::{
     core::ScopeState,
@@ -17,12 +17,12 @@ pub enum RoomRequest {
 
 #[derive(Clone, Debug)]
 pub enum RoomResponse {
-    Ok,
+    ListParticipants(HashSet<Participant>),
 }
 
 #[derive(Clone, Debug)]
-pub enum RoomBroadcast {
-    State,
+pub enum RoomEvent {
+    ParticipantJoined(Participant),
 }
 
 #[derive(Clone, Debug)]
@@ -36,7 +36,7 @@ pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
 #[derive(Clone)]
 pub struct RoomChannel {
     pub tx: mpsc::Sender<RoomMessage>,
-    pub bc_tx: broadcast::Sender<RoomBroadcast>,
+    pub bc_tx: broadcast::Sender<RoomEvent>,
 }
 
 impl RoomChannel {
@@ -59,9 +59,9 @@ impl RoomChannel {
         return result.await.unwrap();
     }
 
-    // pub fn subscribe(&self) -> broadcast::Receiver<(RoomMessage, oneshot::Sender<RoomResponse>)> {
-    //     return self.tx.subscribe();
-    // }
+    pub fn subscribe(&self) -> broadcast::Receiver<RoomEvent> {
+        return self.bc_tx.subscribe();
+    }
 }
 
 pub fn use_room_channel(cx: &ScopeState) -> &UseSharedState<RoomChannel> {

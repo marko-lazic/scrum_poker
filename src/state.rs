@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 
 use crate::{
-    channel::{RoomBroadcast, RoomChannel, RoomMessage, RoomRequest, RoomResponse},
+    channel::{RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse},
     database,
     room::Room,
 };
@@ -31,7 +31,6 @@ impl AppState {
     pub async fn spawn_or_find_room(&self, room_id: Arc<String>) -> RoomChannel {
         let channel = self.find_channel(room_id.clone()).await;
         if channel.is_some() {
-            println!("User gets existing room channel");
             return channel.unwrap();
         } else {
             return self.spawn_room(room_id.clone()).await;
@@ -74,11 +73,8 @@ impl AppState {
 
     fn create_broadcast_channel(
         &self,
-    ) -> (
-        broadcast::Sender<RoomBroadcast>,
-        broadcast::Receiver<RoomBroadcast>,
-    ) {
-        let (tx, rx) = broadcast::channel::<RoomBroadcast>(10);
+    ) -> (broadcast::Sender<RoomEvent>, broadcast::Receiver<RoomEvent>) {
+        let (tx, rx) = broadcast::channel::<RoomEvent>(10);
         return (tx, rx);
     }
 }

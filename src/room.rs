@@ -8,7 +8,7 @@ use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use uuid::Uuid;
 
-use crate::channel::{RoomBroadcast, RoomMessage, RoomRequest, RoomResponse};
+use crate::channel::{RoomEvent, RoomMessage, RoomRequest, RoomResponse};
 
 #[derive(Debug, Clone)]
 pub struct Participant {
@@ -60,33 +60,41 @@ impl Room {
     pub async fn run(
         &self,
         mut room_rx: mpsc::Receiver<RoomMessage>,
-        mut room_bc_tx: broadcast::Sender<RoomBroadcast>,
+        room_bc_tx: broadcast::Sender<RoomEvent>,
         ready_notifier: oneshot::Sender<()>,
     ) {
-        println!("Room task {} is ready!", self.room_id);
+        println!("Room {} ready.", self.room_id);
         let _ = ready_notifier.send(());
 
         loop {
             while let Some((request, response)) = room_rx.recv().await {
-                self.update_room(request).await;
-                response.send(RoomResponse::Ok).unwrap();
+                self.update_room(request, response, &room_bc_tx).await;
             }
         }
     }
 
-    async fn update_room(&self, request: RoomRequest) {
+    async fn update_room(
+        &self,
+        request: RoomRequest,
+        resposne: oneshot::Sender<RoomResponse>,
+        tx: &broadcast::Sender<RoomEvent>,
+    ) {
         match request {
-            RoomRequest::AddParticipant(p) => self.insert_participant(p).await,
+            RoomRequest::AddParticipant(p) => {
+                self.insert_participant(p.clone()).await;
+                resposne
+                    .send(RoomResponse::ListParticipants(
+                        self.participants.lock().await.clone(),
+                    ))
+                    .unwrap();
+                let _result = tx.send(RoomEvent::ParticipantJoined(p));
+            }
             RoomRequest::Estimate(e) => println!("Estimate {:?}", e),
         }
     }
 
     async fn insert_participant(&self, p: Participant) {
-        if self.participants.lock().await.insert(p.clone()) {
-            println!("Participant {} inserted successfully!", p.name);
-        } else {
-            println!("Participant {} already exists in the set.", p.name);
-        }
+        self.participants.lock().await.replace(p.clone());
     }
 }
 

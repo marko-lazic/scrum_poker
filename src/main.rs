@@ -109,11 +109,6 @@ async fn ws_handler(
 
     let channel = state.spawn_or_find_room(room_id.clone()).await;
 
-    let name = names::Generator::default().next().unwrap_or_default();
-    let participant = Participant::new(session_id, Arc::new(name));
-    let msg = RoomRequest::AddParticipant(participant);
-    channel.send(msg).await;
-
     ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel))
 }
 
