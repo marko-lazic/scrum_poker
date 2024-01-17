@@ -4,11 +4,11 @@ use std::{
     sync::Arc,
 };
 
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use uuid::Uuid;
 
-use crate::channel::{RoomMessage, RoomRequest, RoomResponse};
+use crate::channel::{RoomBroadcast, RoomMessage, RoomRequest, RoomResponse};
 
 #[derive(Debug, Clone)]
 pub struct Participant {
@@ -43,15 +43,15 @@ impl Eq for Participant {}
 
 #[derive(Debug)]
 pub struct Room {
-    pub room_id: Arc<String>,
+    pub room_id: Arc<str>,
     pub show: bool,
     pub participants: Mutex<HashSet<Participant>>,
 }
 
 impl Room {
-    pub fn new(room_id: String) -> Self {
+    pub fn new(room_id: Arc<str>) -> Self {
         Room {
-            room_id: Arc::from(room_id),
+            room_id,
             show: false,
             participants: Mutex::new(HashSet::new()),
         }
@@ -59,14 +59,15 @@ impl Room {
 
     pub async fn run(
         &self,
-        mut rx: mpsc::Receiver<RoomMessage>,
+        mut room_rx: mpsc::Receiver<RoomMessage>,
+        mut room_bc_tx: broadcast::Sender<RoomBroadcast>,
         ready_notifier: oneshot::Sender<()>,
     ) {
         println!("Room task {} is ready!", self.room_id);
         let _ = ready_notifier.send(());
 
         loop {
-            while let Some((request, response)) = rx.recv().await {
+            while let Some((request, response)) = room_rx.recv().await {
                 self.update_room(request).await;
                 response.send(RoomResponse::Ok).unwrap();
             }

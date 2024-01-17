@@ -107,7 +107,7 @@ async fn ws_handler(
     let session_id = get_session_id.uuid();
     let room_id: Arc<String> = Arc::from(room_id);
 
-    let channel = state.get_or_create_room_channel(room_id.clone()).await;
+    let channel = state.spawn_or_find_room(room_id.clone()).await;
 
     let name = names::Generator::default().next().unwrap_or_default();
     let participant = Participant::new(session_id, Arc::new(name));

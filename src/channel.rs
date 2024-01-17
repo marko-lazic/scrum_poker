@@ -4,7 +4,7 @@ use dioxus::{
     core::ScopeState,
     hooks::{use_shared_state, UseSharedState},
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot};
 use uuid::Uuid;
 
 use crate::room::Participant;
@@ -21,6 +21,11 @@ pub enum RoomResponse {
 }
 
 #[derive(Clone, Debug)]
+pub enum RoomBroadcast {
+    State,
+}
+
+#[derive(Clone, Debug)]
 pub struct EstimateData {
     pub session_id: Uuid,
     pub value: Arc<str>,
@@ -31,6 +36,7 @@ pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
 #[derive(Clone)]
 pub struct RoomChannel {
     pub tx: mpsc::Sender<RoomMessage>,
+    pub bc_tx: broadcast::Sender<RoomBroadcast>,
 }
 
 impl RoomChannel {
