@@ -12,9 +12,9 @@ use axum::{
 use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
-use channel::{RoomChannel, RoomRequest};
+use channel::RoomChannel;
 use nanoid::nanoid;
-use room::Participant;
+
 use std::sync::Arc;
 
 use surrealdb::engine::remote::ws::Client;

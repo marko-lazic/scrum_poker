@@ -27,8 +27,13 @@ pub fn Table(cx: Scope) -> Element {
             let result = channel.read().send(add_participant).await;
 
             match result {
-                RoomResponse::ListParticipants(participants_list) => {
-                    *participants.write() = participants_list;
+                Ok(response) => match response {
+                    RoomResponse::ListParticipants(participants_list) => {
+                        *participants.write() = participants_list;
+                    }
+                },
+                Err(err) => {
+                    println!("Table error {:?}", err);
                 }
             }
 
