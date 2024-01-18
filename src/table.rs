@@ -31,9 +31,10 @@ pub fn Table(cx: Scope) -> Element {
                     RoomResponse::ListParticipants(participants_list) => {
                         *participants.write() = participants_list;
                     }
+                    _ => {}
                 },
                 Err(err) => {
-                    println!("Table error {:?}", err);
+                    println!("Table send add participant error {:?}", err);
                 }
             }
 

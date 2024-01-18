@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dioxus::prelude::*;
 
 use crate::{
-    channel::{use_room_channel, EstimateData, RoomRequest},
+    channel::{use_room_channel, EstimateData, RoomRequest, RoomResponse},
     session::use_session_id,
 };
 
@@ -22,7 +22,7 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
             class: "select-none p-1 relative w-12 md:w-20 h-14 md:h-28 mx-auto bg-white hover:bg-slate-100 focus:bg-slate-400 rounded-xl shadow-lg text-2xl md:text-3xl text-slate-500 focus:text-slate-50",
             onclick: move |_| {
                 println!("Clicked {:?}", cx.props.value);
-                let channel = channel.write().clone();
+                let channel = channel.read().clone();
                 let session_id = session_id.read().clone();
                 let value = cx.props.value.clone();
                 async move {
@@ -30,7 +30,15 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
                         session_id,
                         value: value,
                     };
-                    channel.send(RoomRequest::Estimate(e)).await;
+                    let result = channel.send(RoomRequest::Estimate(e)).await;
+                    match result {
+                        Ok(response) => {
+                            println!("{:?}", response);
+                        }
+                        Err(err) => {
+                            println!("Card estimate send error {:?}", err);
+                        }
+                    }
                 }
             },
             span {

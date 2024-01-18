@@ -18,6 +18,7 @@ pub enum RoomRequest {
 #[derive(Clone, Debug)]
 pub enum RoomResponse {
     ListParticipants(HashSet<Participant>),
+    EstimateRecieved,
 }
 
 #[derive(Clone, Debug)]

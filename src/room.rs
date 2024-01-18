@@ -89,7 +89,10 @@ impl Room {
                     .unwrap();
                 let _result = tx.send(RoomEvent::ParticipantJoined(p));
             }
-            RoomRequest::Estimate(e) => println!("Estimate {:?}", e),
+            RoomRequest::Estimate(e) => {
+                println!("Estimate {:?}", e);
+                resposne.send(RoomResponse::EstimateRecieved).unwrap();
+            }
         }
     }
 
