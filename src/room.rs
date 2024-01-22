@@ -63,7 +63,7 @@ impl Room {
         room_bc_tx: broadcast::Sender<RoomEvent>,
         ready_notifier: oneshot::Sender<()>,
     ) {
-        println!("Room {} ready.", self.room_id);
+        tracing::info!("Room {} ready.", self.room_id);
         let _ = ready_notifier.send(());
 
         loop {
@@ -90,7 +90,7 @@ impl Room {
                 let _result = tx.send(RoomEvent::ParticipantJoined(p));
             }
             RoomRequest::Estimate(e) => {
-                println!("Estimate {:?}", e);
+                tracing::info!("Update room {:?}", e);
                 resposne.send(RoomResponse::EstimateRecieved).unwrap();
             }
         }

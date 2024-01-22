@@ -14,6 +14,7 @@ use axum_session::{
 };
 use channel::RoomChannel;
 use nanoid::nanoid;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 use std::sync::Arc;
 
@@ -43,6 +44,7 @@ pub struct AppProps {
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
     let app_state = AppState::new();
     let addr = app_state.addr;
     // Axum session
@@ -62,7 +64,7 @@ async fn main() {
         .with_state(app_state)
         .layer(SessionLayer::new(session_store));
 
-    println!("Listening on http://{addr}");
+    tracing::info!("Listening on http://{addr}");
 
     axum::Server::bind(&addr.to_string().parse().unwrap())
         .serve(routes.into_make_service())
@@ -71,8 +73,9 @@ async fn main() {
 }
 
 async fn root() -> Redirect {
+    // TODO: nanoid currently can make _ -
     let room_id = nanoid!(10);
-    println!("Creating room id {}", room_id);
+    tracing::info!("Creating room id {}", room_id);
     Redirect::to(format!("/{room_id}").as_str())
 }
 
@@ -130,4 +133,24 @@ async fn websocket(
         .view
         .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)
         .await;
+}
+
+fn init_tracing() {
+    // Start configuring a fmt
+    let subscriber = tracing_subscriber::fmt()
+        // Use a more compact, abbreviated log format
+        .compact()
+        // Display source code file paths
+        .with_file(true)
+        // Display source code line numbers
+        .with_line_number(true)
+        // Display the thread ID an event was recorded on with_thread_ids (true)
+        // Don't display the event's target (module path)
+        .with_target(false)
+        // Build the subscriber
+        .with_span_events(FmtSpan::ENTER | FmtSpan::CLOSE)
+        .finish();
+
+    // Set the subscriber as the default
+    tracing::subscriber::set_global_default(subscriber).unwrap();
 }

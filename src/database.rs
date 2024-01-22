@@ -21,6 +21,7 @@ impl managed::Manager for Manager {
     type Error = Error;
 
     async fn create(&self) -> Result<Surreal<Client>, Error> {
+        // TODO: Replace unrwarp with retry task
         let db = Surreal::new::<Ws>("localhost:8000").await.unwrap();
         db.signin(Root {
             username: "root",

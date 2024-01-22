@@ -34,7 +34,7 @@ pub fn Table(cx: Scope) -> Element {
                     _ => {}
                 },
                 Err(err) => {
-                    println!("Table send add participant error {:?}", err);
+                    tracing::info!("Table send add participant error {:?}", err);
                 }
             }
 
@@ -46,7 +46,7 @@ pub fn Table(cx: Scope) -> Element {
                             participants.write().insert(p.clone());
                         }
                     },
-                    Err(err) => println!("Table component recieved err {:?}", err),
+                    Err(err) => tracing::info!("Table component recieved err {:?}", err),
                 }
             }
         }
