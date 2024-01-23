@@ -1,6 +1,7 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use dioxus::prelude::*;
+use uuid::Uuid;
 
 use crate::{
     channel::{use_room_channel, RoomEvent, RoomRequest, RoomResponse},
@@ -10,7 +11,7 @@ use crate::{
 
 #[component]
 pub fn Table(cx: Scope) -> Element {
-    let participants = use_ref(cx, || HashSet::<Participant>::new());
+    let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
     let channel = use_room_channel(cx);
     let session_id = use_session_id(cx);
 
@@ -43,7 +44,10 @@ pub fn Table(cx: Scope) -> Element {
                 match result {
                     Ok(msg) => match msg {
                         RoomEvent::ParticipantJoined(p) => {
-                            participants.write().insert(p.clone());
+                            participants.write().insert(p.session_id, p);
+                        }
+                        RoomEvent::Update(p) => {
+                            participants.write().insert(p.session_id, p);
                         }
                     },
                     Err(err) => tracing::info!("Table component recieved err {:?}", err),
@@ -60,7 +64,7 @@ pub fn Table(cx: Scope) -> Element {
                 }
             }
             tbody {
-                for participant in participants.read().iter() {
+                for (_ , participant) in participants.read().iter() {
                     tr { class: "bg-white border-b dark:bg-gray-800 dark:border-gray-700",
                         td { class: "py-3 px-6", "{participant.name}" }
                         td { class: "py-3 px-6 text-center", "{participant.estimate}" }

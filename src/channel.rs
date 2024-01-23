@@ -1,4 +1,7 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use dioxus::{
     core::ScopeState,
@@ -17,13 +20,14 @@ pub enum RoomRequest {
 
 #[derive(Clone, Debug)]
 pub enum RoomResponse {
-    ListParticipants(HashSet<Participant>),
+    ListParticipants(HashMap<Uuid, Participant>),
     EstimateRecieved,
 }
 
 #[derive(Clone, Debug)]
 pub enum RoomEvent {
     ParticipantJoined(Participant),
+    Update(Participant),
 }
 
 #[derive(Clone, Debug)]
@@ -60,14 +64,14 @@ impl RoomChannel {
         let handle = tokio::spawn(async move {
             match tx.send((msg, resp_tx)).await {
                 Ok(_) => {
-                    // println!("Message sent successfully");
+                    // tracing::info!("Message sent successfully");
                     return match resp_rx.await {
                         Ok(response) => Ok(response),
                         Err(err) => Err(ScError::OneshotRecieveError(err)),
                     };
                 }
                 Err(err) => {
-                    println!("Error sending message: {}", err);
+                    tracing::info!("Error sending message: {}", err);
                     return Err(ScError::MpscSendError(err));
                 }
             }

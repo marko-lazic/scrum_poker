@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     hash::{Hash, Hasher},
     sync::Arc,
 };
@@ -14,7 +14,7 @@ use crate::channel::{RoomEvent, RoomMessage, RoomRequest, RoomResponse};
 pub struct Participant {
     pub session_id: Uuid,
     pub name: Arc<String>,
-    pub estimate: Arc<String>,
+    pub estimate: Arc<str>,
 }
 
 impl Participant {
@@ -22,7 +22,7 @@ impl Participant {
         Participant {
             session_id,
             name,
-            estimate: Arc::new("".to_string()),
+            estimate: Arc::from(""),
         }
     }
 }
@@ -45,7 +45,7 @@ impl Eq for Participant {}
 pub struct Room {
     pub room_id: Arc<str>,
     pub show: bool,
-    pub participants: Mutex<HashSet<Participant>>,
+    pub participants: Mutex<HashMap<Uuid, Participant>>,
 }
 
 impl Room {
@@ -53,7 +53,7 @@ impl Room {
         Room {
             room_id,
             show: false,
-            participants: Mutex::new(HashSet::new()),
+            participants: Mutex::new(HashMap::new()),
         }
     }
 
@@ -87,17 +87,25 @@ impl Room {
                         self.participants.lock().await.clone(),
                     ))
                     .unwrap();
-                let _result = tx.send(RoomEvent::ParticipantJoined(p));
+                let _ = tx.send(RoomEvent::ParticipantJoined(p));
             }
             RoomRequest::Estimate(e) => {
                 tracing::info!("Update room {:?}", e);
                 resposne.send(RoomResponse::EstimateRecieved).unwrap();
+                let mut participants = self.participants.lock().await;
+
+                if let Some(participant) = participants.get_mut(&e.session_id) {
+                    participant.estimate = e.value;
+                    let _ = tx.send(RoomEvent::Update(participant.clone()));
+                } else {
+                    println!("Participant with session_id {} not found", e.session_id);
+                }
             }
         }
     }
 
     async fn insert_participant(&self, p: Participant) {
-        self.participants.lock().await.replace(p.clone());
+        self.participants.lock().await.insert(p.session_id, p);
     }
 }
 
