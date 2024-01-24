@@ -33,7 +33,11 @@ pub fn Table(cx: Scope) -> Element {
                     _ => {}
                 },
                 Err(err) => {
-                    tracing::info!("Table send add participant error {:?}", err);
+                    tracing::error!(
+                        "Failed to get list of participants, room_id {}, error: {:?}",
+                        app_props.room_id,
+                        err
+                    );
                 }
             }
 
@@ -48,7 +52,11 @@ pub fn Table(cx: Scope) -> Element {
                             participants.write().insert(p.session_id, p);
                         }
                     },
-                    Err(err) => tracing::info!("Table component recieved err {:?}", err),
+                    Err(err) => tracing::info!(
+                        "Failed to get room event, room_id: {}, error {:?}",
+                        app_props.room_id,
+                        err
+                    ),
                 }
             }
         }

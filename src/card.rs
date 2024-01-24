@@ -18,7 +18,7 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
         button {
             class: "select-none p-1 relative w-12 md:w-20 h-14 md:h-28 mx-auto bg-white hover:bg-slate-100 focus:bg-slate-400 rounded-xl shadow-lg text-2xl md:text-3xl text-slate-500 focus:text-slate-50",
             onclick: move |_| {
-                tracing::info!("Card clicked {:?}", cx.props.value);
+                tracing::trace!("Card clicked {:?}", cx.props.value);
                 let app_props = app_props.read().clone();
                 let value = cx.props.value.clone();
                 async move {
@@ -29,10 +29,10 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
                     let result = app_props.channel.send(RoomRequest::Estimate(e)).await;
                     match result {
                         Ok(response) => {
-                            tracing::info!("Card {:?}", response);
+                            tracing::trace!("Server received {:?}", response);
                         }
                         Err(err) => {
-                            tracing::info!("Card estimate send error {:?}", err);
+                            tracing::error!("Card estimate send error {:?}", err);
                         }
                     }
                 }

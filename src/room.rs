@@ -74,35 +74,49 @@ impl Room {
         &self,
         request: RoomRequest,
         resposne: oneshot::Sender<RoomResponse>,
-        tx: &broadcast::Sender<RoomEvent>,
+        broadcast: &broadcast::Sender<RoomEvent>,
     ) {
         match request {
             RoomRequest::AddParticipant(p) => {
-                self.insert_participant(p.clone()).await;
-                resposne
-                    .send(RoomResponse::ListParticipants(
-                        self.participants.lock().await.clone(),
-                    ))
-                    .unwrap();
-                let _ = tx.send(RoomEvent::ParticipantJoined(p));
+                self.join_participant(&p, resposne, broadcast).await;
             }
             RoomRequest::Estimate(e) => {
-                tracing::info!("Update room {:?}", e);
+                tracing::trace!("Update estimate {:?}", e);
                 resposne.send(RoomResponse::EstimateRecieved).unwrap();
                 let mut participants = self.participants.lock().await;
 
                 if let Some(participant) = participants.get_mut(&e.session_id) {
                     participant.estimate = e.value;
-                    let _ = tx.send(RoomEvent::Update(participant.clone()));
+                    let _ = broadcast.send(RoomEvent::Update(participant.clone()));
                 } else {
-                    println!("Participant with session_id {} not found", e.session_id);
+                    tracing::error!(
+                        "Participant with session_id {} not found in room {}",
+                        e.session_id,
+                        self.room_id
+                    );
                 }
             }
         }
     }
 
-    async fn insert_participant(&self, p: Participant) {
-        self.participants.lock().await.insert(p.session_id, p);
+    async fn join_participant(
+        &self,
+        p: &Participant,
+        response: oneshot::Sender<RoomResponse>,
+        broadcast: &broadcast::Sender<RoomEvent>,
+    ) {
+        let mut map = self.participants.lock().await;
+        match map.get(&p.session_id) {
+            Some(_existing_participant) => {}
+            None => {
+                map.insert(p.session_id, p.to_owned());
+                let new_participant = map.get(&p.session_id).unwrap().to_owned();
+                let _ = broadcast.send(RoomEvent::ParticipantJoined(new_participant));
+            }
+        };
+        response
+            .send(RoomResponse::ListParticipants(map.clone()))
+            .unwrap();
     }
 }
 
