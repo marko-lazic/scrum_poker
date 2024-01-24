@@ -1,10 +1,5 @@
-use std::sync::Arc;
-
 use deadpool::async_trait;
 use deadpool::managed;
-use dioxus::core::ScopeState;
-use dioxus::hooks::use_shared_state;
-use dioxus::hooks::UseSharedState;
 use surrealdb::engine::remote::ws::Client;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
@@ -40,8 +35,4 @@ impl managed::Manager for Manager {
     ) -> managed::RecycleResult<Error> {
         Ok(())
     }
-}
-
-pub fn use_pool(cx: &ScopeState) -> &UseSharedState<Arc<Pool>> {
-    use_shared_state::<Arc<Pool>>(cx).expect("Pool not provided")
 }

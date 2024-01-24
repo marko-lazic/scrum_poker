@@ -1,8 +1,6 @@
-use std::fmt::Debug;
-
-use tokio::sync::{mpsc, oneshot};
-
 use crate::channel::RoomMessage;
+use std::fmt::Debug;
+use tokio::sync::{mpsc, oneshot};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ScError {

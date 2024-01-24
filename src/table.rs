@@ -1,31 +1,29 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    channel::{use_room_channel, RoomEvent, RoomRequest, RoomResponse},
+    app::use_app_props,
+    channel::{RoomEvent, RoomRequest, RoomResponse},
     room::Participant,
-    session::use_session_id,
 };
 
 #[component]
 pub fn Table(cx: Scope) -> Element {
     let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
-    let channel = use_room_channel(cx);
-    let session_id = use_session_id(cx);
+    let app_props = use_app_props(cx);
 
     use_future(cx, (), move |_| {
-        let channel = channel.clone();
+        let app_props = app_props.read().clone();
         let participants = participants.clone();
 
-        let name = names::Generator::default().next().unwrap_or_default();
-        let participant = Participant::new(session_id.read().clone(), Arc::new(name.clone()));
+        let participant = Participant::new(app_props.session_id, app_props.username);
         let add_participant = RoomRequest::AddParticipant(participant);
 
         async move {
-            let mut rx = channel.read().subscribe();
-            let result = channel.read().send(add_participant).await;
+            let mut rx = app_props.channel.subscribe();
+            let result = app_props.channel.send(add_participant).await;
 
             match result {
                 Ok(response) => match response {

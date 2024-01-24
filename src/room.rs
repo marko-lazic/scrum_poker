@@ -1,24 +1,21 @@
+use crate::channel::{RoomEvent, RoomMessage, RoomRequest, RoomResponse};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     hash::{Hash, Hasher},
     sync::Arc,
 };
-
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
-
 use uuid::Uuid;
-
-use crate::channel::{RoomEvent, RoomMessage, RoomRequest, RoomResponse};
 
 #[derive(Debug, Clone)]
 pub struct Participant {
     pub session_id: Uuid,
-    pub name: Arc<String>,
+    pub name: Arc<str>,
     pub estimate: Arc<str>,
 }
 
 impl Participant {
-    pub fn new(session_id: Uuid, name: Arc<String>) -> Participant {
+    pub fn new(session_id: Uuid, name: Arc<str>) -> Participant {
         Participant {
             session_id,
             name,

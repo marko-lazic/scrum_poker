@@ -1,12 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
-
-use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
-
 use crate::{
     channel::{RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse},
     database,
     room::Room,
 };
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -28,7 +26,7 @@ impl AppState {
         }
     }
 
-    pub async fn spawn_or_find_room(&self, room_id: Arc<String>) -> RoomChannel {
+    pub async fn spawn_or_find_room(&self, room_id: Arc<str>) -> RoomChannel {
         let channel = self.find_channel(room_id.clone()).await;
         if channel.is_some() {
             return channel.unwrap();
@@ -37,14 +35,14 @@ impl AppState {
         }
     }
 
-    async fn spawn_room(&self, room_id: Arc<String>) -> RoomChannel {
+    async fn spawn_room(&self, room_id: Arc<str>) -> RoomChannel {
         let (ready_notifier, ready_receiver) = oneshot::channel();
         let (room_tx, room_rx) = self.create_mpsc_channel();
         let (room_bc_tx, _room_bc_rx) = self.create_broadcast_channel();
         let rid = room_id.clone();
         let rbctx = room_bc_tx.clone();
         tokio::spawn(async move {
-            let room = Room::new(Arc::from(rid.as_str()));
+            let room = Room::new(rid);
             room.run(room_rx, rbctx, ready_notifier).await;
         });
 
@@ -61,7 +59,7 @@ impl AppState {
         return new_room_ch;
     }
 
-    async fn find_channel(&self, room_id: Arc<String>) -> Option<RoomChannel> {
+    async fn find_channel(&self, room_id: Arc<str>) -> Option<RoomChannel> {
         let r_rooms = self.room_channels.read().await;
         return r_rooms.get(&room_id.to_string()).cloned();
     }

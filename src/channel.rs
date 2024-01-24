@@ -1,16 +1,7 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-
-use dioxus::{
-    core::ScopeState,
-    hooks::{use_shared_state, UseSharedState},
-};
+use crate::{error::ScError, room::Participant};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, mpsc, oneshot};
 use uuid::Uuid;
-
-use crate::{error::ScError, room::Participant};
 
 #[derive(Clone, Debug)]
 pub enum RoomRequest {
@@ -82,8 +73,4 @@ impl RoomChannel {
     pub fn subscribe(&self) -> broadcast::Receiver<RoomEvent> {
         return self.bc_tx.subscribe();
     }
-}
-
-pub fn use_room_channel(cx: &ScopeState) -> &UseSharedState<RoomChannel> {
-    use_shared_state::<RoomChannel>(cx).expect("Room Channel not provided")
 }

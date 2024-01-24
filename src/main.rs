@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use crate::{app::App, state::AppState};
 use axum::{
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
@@ -14,15 +15,11 @@ use axum_session::{
 };
 use channel::RoomChannel;
 use nanoid::nanoid;
-use tracing_subscriber::fmt::format::FmtSpan;
-
 use std::sync::Arc;
-
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
+use tracing_subscriber::fmt::format::FmtSpan;
 use uuid::Uuid;
-
-use crate::{app::App, state::AppState};
 
 mod app;
 mod card;
@@ -30,16 +27,18 @@ mod channel;
 mod database;
 mod error;
 mod room;
-mod session;
 mod state;
 mod table;
+mod username;
 
 #[derive(Clone)]
 pub struct AppProps {
-    pool: Arc<database::Pool>,
+    // TODO: Use or remove pool
+    _pool: Arc<database::Pool>,
     session_id: Uuid,
-    room_id: Arc<String>,
+    room_id: Arc<str>,
     channel: RoomChannel,
+    username: Arc<str>,
 }
 
 #[tokio::main]
@@ -101,32 +100,32 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>
 }
 
 async fn ws_handler(
-    Path(room_id): Path<String>,
+    Path(room_id): Path<Arc<str>>,
     ws: WebSocketUpgrade,
     session: SessionSurrealSession<Client>,
     State(state): State<AppState>,
 ) -> Response {
-    let get_session_id = session.get_session_id();
-    let session_id = get_session_id.uuid();
-    let room_id: Arc<String> = Arc::from(room_id);
-
+    let session_id = session.get_session_id().uuid();
     let channel = state.spawn_or_find_room(room_id.clone()).await;
+    let username = username::get_username(session);
 
-    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel))
+    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel, username))
 }
 
 async fn websocket(
     stream: WebSocket,
     state: AppState,
     session_id: Uuid,
-    room_id: Arc<String>,
+    room_id: Arc<str>,
     channel: RoomChannel,
+    username: Arc<str>,
 ) {
     let app_props = AppProps {
-        pool: state.pool,
+        _pool: state.pool,
         session_id,
         room_id,
         channel,
+        username,
     };
 
     _ = state
