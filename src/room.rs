@@ -60,8 +60,8 @@ impl Room {
         room_bc_tx: broadcast::Sender<RoomEvent>,
         ready_notifier: oneshot::Sender<()>,
     ) {
-        tracing::info!("Room {} ready.", self.room_id);
-        let _ = ready_notifier.send(());
+        tracing::trace!("Room {} ready.", self.room_id);
+        _ = ready_notifier.send(());
 
         loop {
             while let Some((request, response)) = room_rx.recv().await {
@@ -87,7 +87,7 @@ impl Room {
 
                 if let Some(participant) = participants.get_mut(&e.session_id) {
                     participant.estimate = e.value;
-                    let _ = broadcast.send(RoomEvent::Update(participant.clone()));
+                    _ = broadcast.send(RoomEvent::Update(participant.clone()));
                 } else {
                     tracing::error!(
                         "Participant with session_id {} not found in room {}",
@@ -111,7 +111,7 @@ impl Room {
             None => {
                 map.insert(p.session_id, p.to_owned());
                 let new_participant = map.get(&p.session_id).unwrap().to_owned();
-                let _ = broadcast.send(RoomEvent::ParticipantJoined(new_participant));
+                _ = broadcast.send(RoomEvent::ParticipantJoined(new_participant));
             }
         };
         response

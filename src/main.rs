@@ -14,11 +14,9 @@ use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
 use channel::RoomChannel;
-use nanoid::nanoid;
 use std::sync::Arc;
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
-use tracing_subscriber::fmt::format::FmtSpan;
 use uuid::Uuid;
 
 mod app;
@@ -26,9 +24,11 @@ mod card;
 mod channel;
 mod database;
 mod error;
+mod logs;
 mod room;
 mod state;
 mod table;
+mod urid;
 mod username;
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ pub struct AppProps {
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
+    logs::init_tracing();
     let app_state = AppState::new();
     let addr = app_state.addr;
     // Axum session
@@ -72,13 +72,13 @@ async fn main() {
 }
 
 async fn root() -> Redirect {
-    // TODO: nanoid currently can make _ -
-    let room_id = nanoid!(10);
-    tracing::info!("Creating room id {}", room_id);
+    let room_id = urid::create_url_id();
+    tracing::trace!("Create new room id {}", room_id);
     Redirect::to(format!("/{room_id}").as_str())
 }
 
 async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>) -> Html<String> {
+    // TODO: validate room_id
     let addr = state.addr;
     Html(format!(
         r#"
@@ -132,24 +132,4 @@ async fn websocket(
         .view
         .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)
         .await;
-}
-
-fn init_tracing() {
-    // Start configuring a fmt
-    let subscriber = tracing_subscriber::fmt()
-        // Use a more compact, abbreviated log format
-        .compact()
-        // Display source code file paths
-        .with_file(true)
-        // Display source code line numbers
-        .with_line_number(true)
-        // Display the thread ID an event was recorded on with_thread_ids (true)
-        // Don't display the event's target (module path)
-        .with_target(false)
-        // Build the subscriber
-        .with_span_events(FmtSpan::ENTER | FmtSpan::CLOSE)
-        .finish();
-
-    // Set the subscriber as the default
-    tracing::subscriber::set_global_default(subscriber).unwrap();
 }
