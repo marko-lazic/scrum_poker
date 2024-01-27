@@ -78,7 +78,7 @@ impl Room {
     ) {
         match request {
             RoomRequest::AddParticipant(p) => {
-                self.join_participant(&p, resposne, broadcast).await;
+                self.join_participant(p, resposne, broadcast).await;
             }
             RoomRequest::Estimate(e) => {
                 tracing::trace!("Update estimate {:?}", e);
@@ -96,12 +96,18 @@ impl Room {
                     );
                 }
             }
+            RoomRequest::RemoveParticipant(p) => {
+                let mut map = self.participants.lock().await;
+                map.remove(&p.session_id);
+                _ = broadcast.send(RoomEvent::RemoveParticipant(p));
+                tracing::trace!("Number of participants {}", map.len());
+            }
         }
     }
 
     async fn join_participant(
         &self,
-        p: &Participant,
+        p: Participant,
         response: oneshot::Sender<RoomResponse>,
         broadcast: &broadcast::Sender<RoomEvent>,
     ) {

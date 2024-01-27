@@ -14,6 +14,20 @@ pub fn Table(cx: Scope) -> Element {
     let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
     let app_props = use_app_props(cx);
 
+    use_on_destroy(cx, {
+        let app_props = app_props.read().clone();
+        move || {
+            let channel = app_props.channel.clone();
+            tokio::task::spawn(async move {
+                let participant = Participant::new(app_props.session_id, app_props.username);
+                _ = channel
+                    .send(RoomRequest::RemoveParticipant(participant))
+                    .await;
+                tracing::info!("Called a future!");
+            });
+        }
+    });
+
     use_future(cx, (), move |_| {
         let app_props = app_props.read().clone();
         let participants = participants.clone();
@@ -50,6 +64,9 @@ pub fn Table(cx: Scope) -> Element {
                         }
                         RoomEvent::Update(p) => {
                             participants.write().insert(p.session_id, p);
+                        }
+                        RoomEvent::RemoveParticipant(p) => {
+                            participants.write().remove(&p.session_id);
                         }
                     },
                     Err(err) => tracing::info!(

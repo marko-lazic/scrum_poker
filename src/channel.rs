@@ -6,6 +6,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug)]
 pub enum RoomRequest {
     AddParticipant(Participant),
+    RemoveParticipant(Participant),
     Estimate(EstimateData),
 }
 
@@ -19,6 +20,7 @@ pub enum RoomResponse {
 pub enum RoomEvent {
     ParticipantJoined(Participant),
     Update(Participant),
+    RemoveParticipant(Participant),
 }
 
 #[derive(Clone, Debug)]
