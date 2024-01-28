@@ -109,6 +109,9 @@ impl Room {
                     );
                 }
             }
+            RoomRequest::Heartbeat(session_id) => {
+                self.heartbeat_participant(session_id).await;
+            }
         }
     }
 
@@ -137,15 +140,17 @@ impl Room {
         match map.get_mut(&session_id) {
             Some(participant) => {
                 participant.status = ParticipantStatus::Left;
-                self.spawn_participant_cleanup(session_id);
+                self.spawn_cleanup_participant(session_id);
             }
-            None => todo!(),
+            None => {}
         }
     }
 
-    fn spawn_participant_cleanup(&self, session_id: Uuid) {
+    fn spawn_cleanup_participant(&self, session_id: Uuid) {
         let channel = self.channel.clone();
         tokio::task::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            _ = channel.broadcast.send(RoomEvent::AskForHeartbeat);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             _ = channel.send(RoomRequest::Remove(session_id)).await;
         });
@@ -155,18 +160,30 @@ impl Room {
         let mut map = self.participants.lock().await;
         match map.get_mut(&session_id) {
             Some(participant) => {
-                tracing::info!("Participant {} status {:?}", session_id, participant.status);
+                tracing::trace!("Participant {} status {:?}", session_id, participant.status);
                 if participant.status == ParticipantStatus::Left {
                     map.remove(&session_id);
-                    tracing::info!("Pemoving participant");
+                    tracing::trace!("Pemoving participant");
                     _ = self.channel.broadcast.send(RoomEvent::Left(session_id));
                 }
             }
             None => {
-                tracing::info!("Not found session_id {}", session_id);
+                tracing::trace!("Not found session_id {}", session_id);
             }
         }
-        tracing::info!("Number of participants {}", map.len());
+        tracing::trace!("Number of participants {}", map.len());
+    }
+
+    async fn heartbeat_participant(&self, session_id: Uuid) {
+        let mut map = self.participants.lock().await;
+        match map.get_mut(&session_id) {
+            Some(participant) => {
+                if participant.status == ParticipantStatus::Left {
+                    participant.status = ParticipantStatus::Online;
+                }
+            }
+            None => {}
+        }
     }
 }
 

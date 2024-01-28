@@ -68,6 +68,12 @@ pub fn Table(cx: Scope) -> Element {
                         RoomEvent::Left(session_id) => {
                             participants.write().remove(&session_id);
                         }
+                        RoomEvent::AskForHeartbeat => {
+                            _ = app_props
+                                .channel
+                                .send(RoomRequest::Heartbeat(app_props.session_id))
+                                .await;
+                        }
                     },
                     Err(err) => tracing::info!(
                         "Failed to get room event, room_id: {}, error {:?}",

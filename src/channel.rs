@@ -9,6 +9,7 @@ pub enum RoomRequest {
     Leave(Uuid),
     Remove(Uuid),
     Estimate(EstimateData),
+    Heartbeat(Uuid),
 }
 
 #[derive(Clone, Debug)]
@@ -22,6 +23,7 @@ pub enum RoomEvent {
     Joined(Participant),
     Update(Participant),
     Left(Uuid),
+    AskForHeartbeat,
 }
 
 #[derive(Clone, Debug)]
