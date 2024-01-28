@@ -1,4 +1,5 @@
 use crate::card::Card;
+use crate::name::Name;
 use crate::table::Table;
 use crate::AppProps;
 use dioxus::prelude::*;
@@ -28,9 +29,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
             div { class: "absolute inset-0 bg-[url(/public/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" }
 
             div { class: "mx-auto max-w-4xl",
+                div { class: "relative flex px-10", Name {} }
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
-                    div { class: "divide-y divide-gray-300/50",
-                        div { class: "flex flex-wrap gap-4",
+                    div { class: "divide-y divide-gray-300/50 ",
+                        div { class: "flex flex-wrap gap-4 ",
                             Card { value: "?".into() }
                             Card { value: "☕️".into() }
                             Card { value: "0".into() }

@@ -25,6 +25,7 @@ mod channel;
 mod database;
 mod error;
 mod logs;
+mod name;
 mod room;
 mod state;
 mod table;
