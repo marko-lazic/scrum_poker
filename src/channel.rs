@@ -5,8 +5,9 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub enum RoomRequest {
-    AddParticipant(Participant),
-    RemoveParticipant(Participant),
+    Join(Participant),
+    Leave(Uuid),
+    Remove(Uuid),
     Estimate(EstimateData),
 }
 
@@ -18,9 +19,9 @@ pub enum RoomResponse {
 
 #[derive(Clone, Debug)]
 pub enum RoomEvent {
-    ParticipantJoined(Participant),
+    Joined(Participant),
     Update(Participant),
-    RemoveParticipant(Participant),
+    Left(Uuid),
 }
 
 #[derive(Clone, Debug)]
@@ -31,10 +32,10 @@ pub struct EstimateData {
 
 pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RoomChannel {
     pub tx: mpsc::Sender<RoomMessage>,
-    pub bc_tx: broadcast::Sender<RoomEvent>,
+    pub broadcast: broadcast::Sender<RoomEvent>,
 }
 
 impl RoomChannel {
@@ -73,6 +74,6 @@ impl RoomChannel {
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RoomEvent> {
-        return self.bc_tx.subscribe();
+        return self.broadcast.subscribe();
     }
 }

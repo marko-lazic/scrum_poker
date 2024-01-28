@@ -40,20 +40,20 @@ impl AppState {
         let (room_tx, room_rx) = self.create_mpsc_channel();
         let (room_bc_tx, _room_bc_rx) = self.create_broadcast_channel();
         let rid = room_id.clone();
-        let rbctx = room_bc_tx.clone();
+        let new_room_ch = RoomChannel {
+            tx: room_tx,
+            broadcast: room_bc_tx,
+        };
+        let channel = new_room_ch.clone();
         tokio::spawn(async move {
-            let room = Room::new(rid);
-            room.run(room_rx, rbctx, ready_notifier).await;
+            let room = Room::new(rid, channel);
+            room.run(room_rx, ready_notifier).await;
         });
 
         ready_receiver.await.ok();
 
         let mut w_rooms = self.room_channels.write().await;
 
-        let new_room_ch = RoomChannel {
-            tx: room_tx,
-            bc_tx: room_bc_tx,
-        };
         w_rooms.insert(room_id.to_string(), new_room_ch.clone());
 
         return new_room_ch;

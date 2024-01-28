@@ -19,11 +19,11 @@ pub fn Table(cx: Scope) -> Element {
         move || {
             let channel = app_props.channel.clone();
             tokio::task::spawn(async move {
-                let participant = Participant::new(app_props.session_id, app_props.username);
-                _ = channel
-                    .send(RoomRequest::RemoveParticipant(participant))
-                    .await;
-                tracing::info!("Called a future!");
+                _ = channel.send(RoomRequest::Leave(app_props.session_id)).await;
+                tracing::trace!(
+                    "Table component removed. Send ParticipantLeft {}",
+                    app_props.session_id
+                );
             });
         }
     });
@@ -33,7 +33,7 @@ pub fn Table(cx: Scope) -> Element {
         let participants = participants.clone();
 
         let participant = Participant::new(app_props.session_id, app_props.username);
-        let add_participant = RoomRequest::AddParticipant(participant);
+        let add_participant = RoomRequest::Join(participant);
 
         async move {
             let mut rx = app_props.channel.subscribe();
@@ -59,14 +59,14 @@ pub fn Table(cx: Scope) -> Element {
                 let result = rx.recv().await;
                 match result {
                     Ok(msg) => match msg {
-                        RoomEvent::ParticipantJoined(p) => {
+                        RoomEvent::Joined(p) => {
                             participants.write().insert(p.session_id, p);
                         }
                         RoomEvent::Update(p) => {
                             participants.write().insert(p.session_id, p);
                         }
-                        RoomEvent::RemoveParticipant(p) => {
-                            participants.write().remove(&p.session_id);
+                        RoomEvent::Left(session_id) => {
+                            participants.write().remove(&session_id);
                         }
                     },
                     Err(err) => tracing::info!(
