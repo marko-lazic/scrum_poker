@@ -10,7 +10,7 @@ pub fn Name(cx: Scope) -> Element {
             input {
                 id: "nameInput",
                 r#type: "text",
-                class: "bg-transparent w-full focus:outline-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 placeholder-slate-500 md:text-5xl lg:text-6x",
+                class: "bg-transparent w-full focus:outline-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 placeholder-slate-500 md:text-5xl lg:text-6x selection:bg-yellow-400",
                 value: "{name}",
                 placeholder: "Enter Your Name...",
                 maxlength: "20",
@@ -22,7 +22,6 @@ pub fn Name(cx: Scope) -> Element {
                 },
                 onfocusout: move |_| {},
                 oninput: move |evt| {
-                    tracing::info!("OnFocusOut");
                     name.set(evt.value.clone());
                 }
             }
