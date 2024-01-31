@@ -14,7 +14,7 @@ pub fn get_username(session: &axum_session::Session<SessionSurrealPool<Client>>)
     return username;
 }
 
-fn random_username() -> String {
+pub fn random_username() -> String {
     let name = names::Generator::default().next().unwrap_or_default();
     return capitalize_words(name.as_str());
 }
