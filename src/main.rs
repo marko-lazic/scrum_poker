@@ -40,7 +40,6 @@ pub struct AppProps {
     session_id: Uuid,
     room_id: Arc<str>,
     channel: RoomChannel,
-    username: Arc<str>,
 }
 
 #[tokio::main]
@@ -109,7 +108,6 @@ async fn ws_handler(
 ) -> Response {
     let session_id = session.get_session_id().uuid();
     let channel = state.spawn_or_find_room(room_id.clone()).await;
-    let username = username::get_username(&session);
 
     let app_props = AppProps {
         session: session.clone(),
@@ -117,7 +115,6 @@ async fn ws_handler(
         session_id,
         room_id,
         channel,
-        username,
     };
 
     ws.on_upgrade(move |socket| websocket(socket, state, app_props))

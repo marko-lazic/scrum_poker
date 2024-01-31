@@ -1,19 +1,12 @@
-use std::sync::Arc;
-
+use crate::{app::use_app_props, channel::RoomRequest};
 use dioxus::prelude::*;
 use keyboard_types::Code;
-
-use crate::{app::use_app_props, channel::RoomRequest};
+use std::sync::Arc;
 
 #[component]
-pub fn Name(cx: Scope) -> Element {
+pub fn Name(cx: Scope, username: UseState<String>) -> Element {
     let app_props = use_app_props(cx);
-    let username = app_props
-        .read()
-        .session
-        .get::<String>("username")
-        .expect("Error getting username");
-    let name = use_state(cx, || username);
+
     let blur_eval_provider = use_eval(cx);
     cx.render(rsx! {
         div { class: "flex items-center justify-between",
@@ -21,7 +14,7 @@ pub fn Name(cx: Scope) -> Element {
                 id: "nameInput",
                 r#type: "text",
                 class: "bg-transparent w-full focus:outline-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 placeholder-slate-500 md:text-5xl lg:text-6x selection:bg-yellow-400",
-                value: "{name}",
+                value: "{username}",
                 placeholder: "Enter Your Name...",
                 maxlength: "20",
                 autocomplete: "off",
@@ -33,7 +26,7 @@ pub fn Name(cx: Scope) -> Element {
                 },
                 onfocusout: move |_| {
                     let app_props = app_props.read().clone();
-                    let new_name = name.get().clone();
+                    let new_name = username.get().clone();
                     async move {
                         app_props.session.set("username", new_name.clone());
                         let new_name_str: Arc<str> = Arc::from(new_name.to_owned());
@@ -44,7 +37,8 @@ pub fn Name(cx: Scope) -> Element {
                     }
                 },
                 oninput: move |evt| {
-                    name.set(evt.value.clone());
+                    let evt_value: String = evt.value.clone();
+                    username.set(evt_value);
                 }
             }
         }
