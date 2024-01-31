@@ -36,6 +36,7 @@ mod username;
 pub struct AppProps {
     // TODO: Use or remove pool
     _pool: Arc<database::Pool>,
+    session: SessionSurrealSession<Client>,
     session_id: Uuid,
     room_id: Arc<str>,
     channel: RoomChannel,
@@ -108,27 +109,21 @@ async fn ws_handler(
 ) -> Response {
     let session_id = session.get_session_id().uuid();
     let channel = state.spawn_or_find_room(room_id.clone()).await;
-    let username = username::get_username(session);
+    let username = username::get_username(&session);
 
-    ws.on_upgrade(move |socket| websocket(socket, state, session_id, room_id, channel, username))
-}
-
-async fn websocket(
-    stream: WebSocket,
-    state: AppState,
-    session_id: Uuid,
-    room_id: Arc<str>,
-    channel: RoomChannel,
-    username: Arc<str>,
-) {
     let app_props = AppProps {
-        _pool: state.pool,
+        session: session.clone(),
+        _pool: state.pool.clone(),
         session_id,
         room_id,
         channel,
         username,
     };
 
+    ws.on_upgrade(move |socket| websocket(socket, state, app_props))
+}
+
+async fn websocket(stream: WebSocket, state: AppState, app_props: AppProps) {
     _ = state
         .view
         .launch_with_props::<AppProps>(dioxus_liveview::axum_socket(stream), App, app_props)

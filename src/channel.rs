@@ -10,6 +10,7 @@ pub enum RoomRequest {
     Remove(Uuid),
     Estimate(EstimateData),
     Heartbeat(Uuid),
+    NameChange(Uuid, Arc<str>),
 }
 
 #[derive(Clone, Debug)]

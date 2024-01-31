@@ -112,6 +112,25 @@ impl Room {
             RoomRequest::Heartbeat(session_id) => {
                 self.heartbeat_participant(session_id).await;
             }
+            RoomRequest::NameChange(session_id, new_username) => {
+                self.change_participant_name(session_id, new_username).await;
+            }
+        }
+    }
+
+    async fn change_participant_name(&self, session_id: Uuid, new_username: Arc<str>) {
+        let mut map = self.participants.lock().await;
+        match map.get_mut(&session_id) {
+            Some(participant) => {
+                participant.name = new_username;
+                _ = self
+                    .channel
+                    .broadcast
+                    .send(RoomEvent::Update(participant.clone()));
+            }
+            None => {
+                tracing::warn!("Tried to change participant username but not found in room");
+            }
         }
     }
 

@@ -1,10 +1,20 @@
+use std::sync::Arc;
+
 use dioxus::prelude::*;
 use keyboard_types::Code;
 
+use crate::{app::use_app_props, channel::RoomRequest};
+
 #[component]
 pub fn Name(cx: Scope) -> Element {
-    let name = use_state(cx, || "Needy Muscle".to_string());
-    let eval_provider = use_eval(cx);
+    let app_props = use_app_props(cx);
+    let username = app_props
+        .read()
+        .session
+        .get::<String>("username")
+        .expect("Error getting username");
+    let name = use_state(cx, || username);
+    let blur_eval_provider = use_eval(cx);
     cx.render(rsx! {
         div { class: "flex items-center justify-between",
             input {
@@ -17,10 +27,22 @@ pub fn Name(cx: Scope) -> Element {
                 autocomplete: "off",
                 onkeypress: move |event| {
                     if event.code() == Code::Enter {
-                        _ = eval_provider(r#"document.getElementById("nameInput").blur();"#).unwrap();
+                        _ = blur_eval_provider(r#"document.getElementById("nameInput").blur();"#)
+                            .unwrap();
                     }
                 },
-                onfocusout: move |_| {},
+                onfocusout: move |_| {
+                    let app_props = app_props.read().clone();
+                    let new_name = name.get().clone();
+                    async move {
+                        app_props.session.set("username", new_name.clone());
+                        let new_name_str: Arc<str> = Arc::from(new_name.to_owned());
+                        _ = app_props
+                            .channel
+                            .send(RoomRequest::NameChange(app_props.session_id, new_name_str))
+                            .await;
+                    }
+                },
                 oninput: move |evt| {
                     name.set(evt.value.clone());
                 }

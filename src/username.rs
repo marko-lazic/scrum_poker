@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum_session::SessionSurrealPool;
 use surrealdb::engine::remote::ws::Client;
 
-pub fn get_username(session: axum_session::Session<SessionSurrealPool<Client>>) -> Arc<str> {
+pub fn get_username(session: &axum_session::Session<SessionSurrealPool<Client>>) -> Arc<str> {
     let mut username: String = session.get("username").unwrap_or("".to_string());
     if username.trim().is_empty() {
         username = random_username();
