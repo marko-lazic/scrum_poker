@@ -139,6 +139,7 @@ impl Room {
         match map.get_mut(&p.session_id) {
             Some(existing_participant) => {
                 existing_participant.status = ParticipantStatus::Online;
+                existing_participant.name = p.name;
             }
             None => {
                 map.insert(p.session_id, p.to_owned());
