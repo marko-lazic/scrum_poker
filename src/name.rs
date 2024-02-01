@@ -1,6 +1,6 @@
 use crate::{app::use_app_props, channel::RoomRequest, username};
 use dioxus::prelude::*;
-use keyboard_types::Code;
+use keyboard_types::Key;
 use std::sync::Arc;
 
 #[component]
@@ -21,9 +21,10 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                 maxlength: "20",
                 autocomplete: "off",
                 onkeypress: move |event| {
-                    if event.code() == Code::Enter {
+                    if event.key() == Key::Enter {
                         _ = blur_eval_provider(r#"document.getElementById("nameInput").blur();"#)
                             .unwrap();
+                        pen_visibility.set(false);
                     }
                 },
                 onfocusout: move |_| {
@@ -59,13 +60,14 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                     let evt_value: String = evt.value.clone();
                     username.set(evt_value);
                 },
+                onclick: move |_| {
+                    pen_visibility.set(true);
+                },
                 onmouseover: move |_| {
                     pen_visibility.set(true);
-                    tracing::info!("in");
                 },
                 onmouseout: move |_| {
                     pen_visibility.set(false);
-                    tracing::info!("out");
                 }
             }
             div { class: "pointer-events-none w-0",
