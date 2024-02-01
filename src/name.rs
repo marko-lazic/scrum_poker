@@ -7,13 +7,15 @@ use std::sync::Arc;
 pub fn Name(cx: Scope, username: UseState<String>) -> Element {
     let app_props = use_app_props(cx);
 
+    let pen_visibility: &UseState<bool> = use_state(cx, || false);
+    let pen_hidden = if **pen_visibility { "" } else { "hidden" };
     let blur_eval_provider = use_eval(cx);
     cx.render(rsx! {
-        div { class: "flex items-center justify-between",
+        div { class: "flex items-center justify-between w-full h-full",
             input {
                 id: "nameInput",
                 r#type: "text",
-                class: "bg-transparent w-full focus:outline-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 placeholder-slate-500 md:text-5xl lg:text-6x selection:bg-yellow-400",
+                class: "bg-transparent w-full focus:outline-none mb-4 text-4xl md:text-5xl lg:text-6xl font-extrabold leading-none tracking-tight text-slate-900 placeholder-slate-500  selection:bg-yellow-400",
                 value: "{username}",
                 placeholder: "Enter Your Name...",
                 maxlength: "20",
@@ -56,6 +58,19 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                 oninput: move |evt| {
                     let evt_value: String = evt.value.clone();
                     username.set(evt_value);
+                },
+                onmouseover: move |_| {
+                    pen_visibility.set(true);
+                    tracing::info!("in");
+                },
+                onmouseout: move |_| {
+                    pen_visibility.set(false);
+                    tracing::info!("out");
+                }
+            }
+            div { class: "pointer-events-none w-0",
+                h1 { class: "{pen_hidden} select-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 md:text-5xl lg:text-6x scale-x-[-1]",
+                    "✎"
                 }
             }
         }
