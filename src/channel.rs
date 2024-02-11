@@ -9,6 +9,8 @@ pub enum RoomRequest {
     Leave(Uuid),
     Remove(Uuid),
     Estimate(EstimateData),
+    ChangeVisibility,
+    DeleteEstimates,
     Heartbeat(Uuid),
     NameChange(Uuid, Arc<str>),
 }
@@ -22,9 +24,34 @@ pub enum RoomResponse {
 #[derive(Clone, Debug)]
 pub enum RoomEvent {
     Joined(Participant),
-    Update(Participant),
+    ParticipantUpdate(Participant),
+    ChangedVisibility(EstimateVisibility),
+    EstimatesDeleted,
     Left(Uuid),
-    AskForHeartbeat,
+    RoomRequestedHeartbeat,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum EstimateVisibility {
+    Visible,
+    Hidden,
+}
+
+impl EstimateVisibility {
+    pub fn toggle(&self) -> Self {
+        match *self {
+            EstimateVisibility::Visible => EstimateVisibility::Hidden,
+            EstimateVisibility::Hidden => EstimateVisibility::Visible,
+        }
+    }
+
+    pub fn is_visible(&self) -> bool {
+        if *self == EstimateVisibility::Visible {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

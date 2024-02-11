@@ -1,4 +1,6 @@
-use crate::channel::{RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse};
+use crate::channel::{
+    EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse,
+};
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
@@ -50,7 +52,7 @@ impl Eq for Participant {}
 pub struct Room {
     pub room_id: Arc<str>,
     pub channel: RoomChannel,
-    pub show: bool,
+    pub visibility: Mutex<EstimateVisibility>,
     pub participants: Mutex<HashMap<Uuid, Participant>>,
 }
 
@@ -59,7 +61,7 @@ impl Room {
         Room {
             room_id,
             channel,
-            show: false,
+            visibility: Mutex::new(EstimateVisibility::Hidden),
             participants: Mutex::new(HashMap::new()),
         }
     }
@@ -100,7 +102,7 @@ impl Room {
                     _ = self
                         .channel
                         .broadcast
-                        .send(RoomEvent::Update(participant.clone()));
+                        .send(RoomEvent::ParticipantUpdate(participant.clone()));
                 } else {
                     tracing::error!(
                         "Participant with session_id {} not found in room {}",
@@ -108,6 +110,21 @@ impl Room {
                         self.room_id
                     );
                 }
+            }
+            RoomRequest::ChangeVisibility => {
+                let mut visibility = self.visibility.lock().await;
+                *visibility = visibility.toggle();
+                _ = self
+                    .channel
+                    .broadcast
+                    .send(RoomEvent::ChangedVisibility(visibility.clone()));
+            }
+            RoomRequest::DeleteEstimates => {
+                self.delete_estimates().await;
+                let mut visibility = self.visibility.lock().await;
+                *visibility = EstimateVisibility::Hidden;
+
+                _ = self.channel.broadcast.send(RoomEvent::EstimatesDeleted);
             }
             RoomRequest::Heartbeat(session_id) => {
                 self.heartbeat_participant(session_id).await;
@@ -126,7 +143,7 @@ impl Room {
                 _ = self
                     .channel
                     .broadcast
-                    .send(RoomEvent::Update(participant.clone()));
+                    .send(RoomEvent::ParticipantUpdate(participant.clone()));
             }
             None => {
                 tracing::warn!("Tried to change participant username but not found in room");
@@ -170,7 +187,7 @@ impl Room {
         let channel = self.channel.clone();
         tokio::task::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            _ = channel.broadcast.send(RoomEvent::AskForHeartbeat);
+            _ = channel.broadcast.send(RoomEvent::RoomRequestedHeartbeat);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             _ = channel.send(RoomRequest::Remove(session_id)).await;
         });
@@ -203,6 +220,13 @@ impl Room {
                 }
             }
             None => {}
+        }
+    }
+
+    async fn delete_estimates(&self) {
+        let mut map = self.participants.lock().await;
+        for (_, p) in map.iter_mut() {
+            p.estimate = Arc::from("");
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::card::Card;
-use crate::channel::{RoomEvent, RoomRequest, RoomResponse};
+use crate::channel::{EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
 use crate::name::Name;
 use crate::room::Participant;
 use crate::table::Table;
@@ -25,6 +25,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
     let username = use_state(cx, || username);
 
     let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
+    let estimate_visibility = use_state(cx, || EstimateVisibility::Hidden);
 
     use_on_destroy(cx, {
         let app_props = cx.props.clone();
@@ -43,6 +44,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
     use_future(cx, (), move |_| {
         let app_props = cx.props.clone();
         let participants = participants.clone();
+        let estimate_visibility = estimate_visibility.clone();
         let username = username.clone();
 
         let participant = Participant::new(app_props.session_id, Arc::from(username.get().clone()));
@@ -75,7 +77,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                         RoomEvent::Joined(p) => {
                             participants.write().insert(p.session_id, p);
                         }
-                        RoomEvent::Update(p) => {
+                        RoomEvent::ParticipantUpdate(p) => {
                             participants.write().insert(p.session_id, p.clone());
                             if p.session_id == app_props.session_id
                                 && p.name.as_ref() != username.get().as_str()
@@ -83,10 +85,19 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                                 username.set(p.name.to_string());
                             }
                         }
+                        RoomEvent::ChangedVisibility(v) => {
+                            estimate_visibility.set(v);
+                        }
+                        RoomEvent::EstimatesDeleted => {
+                            for (_, p) in participants.write().iter_mut() {
+                                p.estimate = Arc::from("");
+                            }
+                            estimate_visibility.set(EstimateVisibility::Hidden);
+                        }
                         RoomEvent::Left(session_id) => {
                             participants.write().remove(&session_id);
                         }
-                        RoomEvent::AskForHeartbeat => {
+                        RoomEvent::RoomRequestedHeartbeat => {
                             _ = app_props
                                 .channel
                                 .send(RoomRequest::Heartbeat(app_props.session_id))
@@ -113,20 +124,23 @@ pub fn App(cx: Scope<AppProps>) -> Element {
         });
     }
 
-    let show_estimates = use_state(cx, || false);
     let black_btn_stlye = "text-white bg-slate-600 hover:bg-slate-500 focus:ring-slate-600";
     let white_btn_style = "text-slate-600 bg-slate-50 hover:bg-slate-100 focus:ring-slate-600";
-    let delete_estimates_btn_style = if **show_estimates {
+    let delete_estimates_btn_style = if estimate_visibility.is_visible() {
         black_btn_stlye
     } else {
         white_btn_style
     };
-    let show_estimates_btn_style = if **show_estimates {
+    let show_estimates_btn_style = if estimate_visibility.is_visible() {
         white_btn_style
     } else {
         black_btn_stlye
     };
-    let show_hide_text = if **show_estimates { "Hide" } else { "Show" };
+    let show_hide_text = if estimate_visibility.is_visible() {
+        "Hide"
+    } else {
+        "Show"
+    };
 
     cx.render(rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
@@ -167,7 +181,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     button {
                         class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto  focus:outline-none focus:ring-2 focus:ring-offset-2",
                         onclick: move |_| {
-                            show_estimates.set(false);
+                            let app_props = cx.props.clone();
+                            async move {
+                                _ = app_props.channel.send(RoomRequest::DeleteEstimates).await;
+                            }
                         },
                         "Delete Estimates"
                     }
@@ -175,14 +192,17 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     button {
                         class: "{show_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto focus:outline-none focus:ring-2 focus:ring-offset-2",
                         onclick: move |_| {
-                            show_estimates.set(!show_estimates.get());
+                            let app_props = cx.props.clone();
+                            async move {
+                                _ = app_props.channel.send(RoomRequest::ChangeVisibility).await;
+                            }
                         },
                         "{show_hide_text}"
                     }
                 }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
-                        Table { participants: participants.clone() }
+                        Table { participants: participants.clone(), visibility: estimate_visibility.clone() }
                     }
                 }
             }
