@@ -112,6 +112,22 @@ pub fn App(cx: Scope<AppProps>) -> Element {
             }
         });
     }
+
+    let show_estimates = use_state(cx, || false);
+    let black_btn_stlye = "text-white bg-slate-600 hover:bg-slate-500 focus:ring-slate-600";
+    let white_btn_style = "text-slate-600 bg-slate-50 hover:bg-slate-100 focus:ring-slate-600";
+    let delete_estimates_btn_style = if **show_estimates {
+        black_btn_stlye
+    } else {
+        white_btn_style
+    };
+    let show_estimates_btn_style = if **show_estimates {
+        white_btn_style
+    } else {
+        black_btn_stlye
+    };
+    let show_hide_text = if **show_estimates { "Hide" } else { "Show" };
+
     cx.render(rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {
@@ -126,7 +142,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 div { class: "relative flex px-10", Name { username: username.clone() } }
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "divide-y divide-gray-300/50 ",
-                        div { class: "flex flex-wrap gap-4 ",
+                        div { class: "flex flex-wrap gap-4",
                             Card { value: "?".into() }
                             Card { value: "☕️".into() }
                             Card { value: "0".into() }
@@ -144,8 +160,28 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     }
                 }
                 div { class: "relative flex px-10 py-2", h1 { class: "text-slate-600 font-semibold", "Results" } }
+                div { class: "relative flex px-11 py-5 sm:mx-auto sm:max-w-4x justify-between",
+                    div { span { "" } }
+                    div { span { "" } }
+                    div { span { "" } }
+                    button {
+                        class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto  focus:outline-none focus:ring-2 focus:ring-offset-2",
+                        onclick: move |_| {
+                            show_estimates.set(false);
+                        },
+                        "Delete Estimates"
+                    }
+
+                    button {
+                        class: "{show_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto focus:outline-none focus:ring-2 focus:ring-offset-2",
+                        onclick: move |_| {
+                            show_estimates.set(!show_estimates.get());
+                        },
+                        "{show_hide_text}"
+                    }
+                }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
-                    div { class: "relative flex overflow-x-auto  shadow-md rounded-lg",
+                    div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
                         Table { participants: participants.clone() }
                     }
                 }
