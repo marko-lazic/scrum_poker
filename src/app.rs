@@ -179,7 +179,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     div { span { "" } }
                     div { span { "" } }
                     button {
-                        class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto  focus:outline-none focus:ring-2 focus:ring-offset-2",
+                        class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
                         onclick: move |_| {
                             let app_props = cx.props.clone();
                             async move {
@@ -190,7 +190,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     }
 
                     button {
-                        class: "{show_estimates_btn_style} inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full md:w-auto focus:outline-none focus:ring-2 focus:ring-offset-2",
+                        class: "{show_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
                         onclick: move |_| {
                             let app_props = cx.props.clone();
                             async move {
