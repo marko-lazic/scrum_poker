@@ -90,6 +90,7 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>
         <link rel="stylesheet" href="/public/tailwind.css">
         <link rel="stylesheet" href="/public/style.css">
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/public/sp.js"></script>
     </head>
     <body> <div id="main"></div> </body>
     {glue}
