@@ -1,8 +1,9 @@
 [package]
 name = "scrum_poker"
 version = "0.1.0"
-authors = ["marko.lazic <markolazic@protonmail.com>"]
 edition = "2021"
+description = "A simple to use scrum poker game built in Rust."
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 tokio = { version = "1.35.0", features = ["full", "tracing"] }
