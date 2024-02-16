@@ -19,6 +19,7 @@ use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
+mod actions;
 mod app;
 mod card;
 mod channel;
@@ -90,6 +91,7 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>
         <link rel="stylesheet" href="/public/tailwind.css">
         <link rel="stylesheet" href="/public/style.css">
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2"></script>
         <script src="/public/sp.js"></script>
     </head>
     <body> <div id="main"></div> </body>

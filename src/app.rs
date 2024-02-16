@@ -1,3 +1,4 @@
+use crate::actions::{DeleteEstimatesButton, DeleteEstimatesModal, ShowEstimatesButton};
 use crate::card::Card;
 use crate::channel::{EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
 use crate::name::Name;
@@ -124,23 +125,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
         });
     }
 
-    let black_btn_stlye = "text-white bg-slate-600 hover:bg-slate-500 focus:ring-slate-600";
-    let white_btn_style = "text-slate-600 bg-slate-50 hover:bg-slate-100 focus:ring-slate-600";
-    let delete_estimates_btn_style = if estimate_visibility.is_visible() {
-        black_btn_stlye
-    } else {
-        white_btn_style
-    };
-    let show_estimates_btn_style = if estimate_visibility.is_visible() {
-        white_btn_style
-    } else {
-        black_btn_stlye
-    };
-    let show_hide_text = if estimate_visibility.is_visible() {
-        "Hide"
-    } else {
-        "Show"
-    };
+    let delete_estimates_modal_visibility = use_state(cx, || false);
 
     cx.render(rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
@@ -178,33 +163,18 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                     div { span { "" } }
                     div { span { "" } }
                     div { span { "" } }
-                    button {
-                        class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
-                        onclick: move |_| {
-                            let app_props = cx.props.clone();
-                            async move {
-                                _ = app_props.channel.send(RoomRequest::DeleteEstimates).await;
-                            }
-                        },
-                        "Delete Estimates"
+                    DeleteEstimatesButton {
+                        estimate_visibility: estimate_visibility.clone(),
+                        delete_estimates_modal_visibility: delete_estimates_modal_visibility.clone()
                     }
-
-                    button {
-                        class: "{show_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
-                        onclick: move |_| {
-                            let app_props = cx.props.clone();
-                            async move {
-                                _ = app_props.channel.send(RoomRequest::ChangeVisibility).await;
-                            }
-                        },
-                        "{show_hide_text}"
-                    }
+                    ShowEstimatesButton { estimate_visibility: estimate_visibility.clone() }
                 }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
                         Table { participants: participants.clone(), visibility: estimate_visibility.clone() }
                     }
                 }
+                DeleteEstimatesModal { show_modal: delete_estimates_modal_visibility.clone() }
             }
         }
     })
