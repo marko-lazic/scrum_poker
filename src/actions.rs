@@ -66,6 +66,9 @@ pub fn ShowEstimatesButton(
 #[component]
 pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
     let app_props = use_app_props(cx);
+
+    let blur_eval_provider = use_eval(cx);
+    _ = blur_eval_provider(r#"document.getElementById("deleteButton").focus();"#).unwrap();
     if **show_modal {
         cx.render(rsx! {
             // Background overlay
@@ -112,9 +115,18 @@ pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
                                 }
                             }
                         }
-                        div { class: "bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse",
+                        div { class: "bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row justify-end",
                             button {
-                                class: "w-full inline-flex items-center justify-center rounded-full border border-transparent px-8 py-4 bg-red-500 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm",
+                                class: "w-full inline-flex items-center justify-center rounded-full border border-slate-300 px-8 py-4 bg-white text-base font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm",
+                                onclick: move |_| {
+                                    show_modal.set(false);
+                                },
+                                "Cancel"
+                            }
+
+                            button {
+                                id: "deleteButton",
+                                class: "mt-3 w-full inline-flex items-center justify-center rounded-full border border-transparent px-8 py-4 bg-red-500 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm",
                                 onclick: move |_| {
                                     let app_props = app_props.clone();
                                     let show_modal = show_modal.clone();
@@ -124,13 +136,6 @@ pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
                                     }
                                 },
                                 "Delete"
-                            }
-                            button {
-                                class: "mt-3 w-full inline-flex items-center justify-center rounded-full border border-slate-300 px-8 py-4 bg-white text-base font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm",
-                                onclick: move |_| {
-                                    show_modal.set(false);
-                                },
-                                "Cancel"
                             }
                         }
                     }
