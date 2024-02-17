@@ -1,6 +1,6 @@
 use crate::actions::{DeleteEstimatesButton, DeleteEstimatesModal, ShowEstimatesButton};
 use crate::card::Card;
-use crate::channel::{EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
+use crate::channel::{Estimate, EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
 use crate::name::Name;
 use crate::room::Participant;
 use crate::table::Table;
@@ -91,7 +91,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                         }
                         RoomEvent::EstimatesDeleted => {
                             for (_, p) in participants.write().iter_mut() {
-                                p.estimate = Arc::from("");
+                                p.estimate = Estimate::None;
                             }
                             estimate_visibility.set(EstimateVisibility::Hidden);
                         }
@@ -142,19 +142,19 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "divide-y divide-gray-300/50 ",
                         div { class: "flex flex-wrap gap-4",
-                            Card { value: "?".into() }
-                            Card { value: "☕️".into() }
-                            Card { value: "0".into() }
-                            Card { value: "0.5".into() }
-                            Card { value: "1".into() }
-                            Card { value: "2".into() }
-                            Card { value: "3".into() }
-                            Card { value: "5".into() }
-                            Card { value: "8".into() }
-                            Card { value: "13".into() }
-                            Card { value: "20".into() }
-                            Card { value: "40".into() }
-                            Card { value: "100".into() }
+                            Card { value: Estimate::QuestionMark }
+                            Card { value: Estimate::Coffe }
+                            Card { value: Estimate::Zero }
+                            Card { value: Estimate::Half }
+                            Card { value: Estimate::One }
+                            Card { value: Estimate::Two }
+                            Card { value: Estimate::Three }
+                            Card { value: Estimate::Five }
+                            Card { value: Estimate::Eight }
+                            Card { value: Estimate::Thirteen }
+                            Card { value: Estimate::Twenty }
+                            Card { value: Estimate::Fourty }
+                            Card { value: Estimate::Hundred }
                         }
                     }
                 }

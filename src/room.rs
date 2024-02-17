@@ -1,5 +1,5 @@
 use crate::channel::{
-    EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse,
+    Estimate, EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse,
 };
 use std::{
     collections::HashMap,
@@ -19,7 +19,7 @@ pub enum ParticipantStatus {
 pub struct Participant {
     pub session_id: Uuid,
     pub name: Arc<str>,
-    pub estimate: Arc<str>,
+    pub estimate: Estimate,
     pub status: ParticipantStatus,
 }
 
@@ -28,7 +28,7 @@ impl Participant {
         Participant {
             session_id,
             name,
-            estimate: Arc::from(""),
+            estimate: Estimate::None,
             status: ParticipantStatus::Online,
         }
     }
@@ -92,21 +92,25 @@ impl Room {
             RoomRequest::Remove(session_id) => {
                 self.remove_participant(session_id).await;
             }
-            RoomRequest::Estimate(e) => {
-                tracing::trace!("Update estimate {:?}", e);
+            RoomRequest::Estimate(session_id, estimate_point) => {
+                tracing::trace!(
+                    "Update estimate session_id: {:?}, estimate: {}",
+                    session_id,
+                    estimate_point
+                );
                 response.send(RoomResponse::EstimateRecieved).unwrap();
                 let mut participants = self.participants.lock().await;
 
-                if let Some(participant) = participants.get_mut(&e.session_id) {
-                    participant.estimate = e.value;
+                if let Some(participant) = participants.get_mut(&session_id) {
+                    participant.estimate = estimate_point;
                     _ = self
                         .channel
                         .broadcast
                         .send(RoomEvent::ParticipantUpdate(participant.clone()));
                 } else {
                     tracing::error!(
-                        "Participant with session_id {} not found in room {}",
-                        e.session_id,
+                        "Update estimate: Participant with session_id {} not found in room {}",
+                        session_id,
                         self.room_id
                     );
                 }
@@ -226,7 +230,7 @@ impl Room {
     async fn delete_estimates(&self) {
         let mut map = self.participants.lock().await;
         for (_, p) in map.iter_mut() {
-            p.estimate = Arc::from("");
+            p.estimate = Estimate::None;
         }
     }
 }

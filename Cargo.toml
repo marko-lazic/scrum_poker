@@ -24,6 +24,7 @@ uuid = "1.6.1"
 nanoid = "0.4.0"
 names = "0.14.0"
 keyboard-types = "0.7"
+itertools = "0.12.1"
 
 [profile.dev]
 opt-level = 1

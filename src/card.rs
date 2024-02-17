@@ -1,13 +1,12 @@
 use crate::{
     app::use_app_props,
-    channel::{EstimateData, RoomRequest},
+    channel::{Estimate, RoomRequest},
 };
 use dioxus::prelude::*;
-use std::sync::Arc;
 
 #[derive(PartialEq, Props)]
 pub struct CardProps {
-    value: Arc<str>,
+    value: Estimate,
 }
 
 #[component]
@@ -20,13 +19,12 @@ pub fn Card(cx: Scope<CardProps>) -> Element {
             onclick: move |_| {
                 tracing::trace!("Card clicked {:?}", cx.props.value);
                 let app_props = app_props.read().clone();
-                let value = cx.props.value.clone();
+                let estimate_point = cx.props.value.clone();
                 async move {
-                    let e = EstimateData {
-                        session_id: app_props.session_id,
-                        value: value,
-                    };
-                    let result = app_props.channel.send(RoomRequest::Estimate(e)).await;
+                    let result = app_props
+                        .channel
+                        .send(RoomRequest::Estimate(app_props.session_id, estimate_point))
+                        .await;
                     match result {
                         Ok(response) => {
                             tracing::trace!("Server received {:?}", response);
