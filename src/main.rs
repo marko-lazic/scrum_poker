@@ -93,7 +93,8 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<Arc<str
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Dioxus LiveView with Axum</title>
+        <title>Scrum Poker</title>
+        <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
         <link rel="stylesheet" href="/public/tailwind.css">
         <link rel="stylesheet" href="/public/style.css">
         <script src="https://cdn.tailwindcss.com"></script>
