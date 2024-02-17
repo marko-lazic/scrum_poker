@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use crate::{app::App, state::AppState};
+use crate::{app::App, state::AppState, validate::ALPHABET_AND_NUMBERS};
 use axum::{
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
         Path, State,
     },
-    response::{Html, Redirect, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
@@ -30,8 +30,8 @@ mod name;
 mod room;
 mod state;
 mod table;
-mod urid;
 mod username;
+mod validate;
 
 #[derive(Clone)]
 pub struct AppProps {
@@ -74,15 +74,21 @@ async fn main() {
 }
 
 async fn root() -> Redirect {
-    let room_id = urid::create_url_id();
+    let room_id = nanoid::nanoid!(10, &ALPHABET_AND_NUMBERS);
     tracing::trace!("Create new room id {}", room_id);
     Redirect::to(format!("/{room_id}").as_str())
 }
 
-async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>) -> Html<String> {
-    // TODO: validate room_id
+async fn room_handler(State(state): State<AppState>, Path(room_id): Path<Arc<str>>) -> Response {
+    let validated_room_id = validate::room_id(room_id.clone());
+
+    if validated_room_id != room_id.clone() {
+        let redirect = Redirect::to(format!("/{validated_room_id}").as_str());
+        return redirect.into_response();
+    }
+
     let addr = state.addr;
-    Html(format!(
+    let html = Html(format!(
         r#"
     <!DOCTYPE html>
     <html>
@@ -100,7 +106,9 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<String>
     "#,
         // Create the glue code to connect to the WebSocket on the "/ws" route
         glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws/{room_id}"))
-    ))
+    ));
+
+    return html.into_response();
 }
 
 async fn ws_handler(

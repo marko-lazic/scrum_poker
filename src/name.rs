@@ -1,4 +1,4 @@
-use crate::{app::use_app_props, channel::RoomRequest, username};
+use crate::{app::use_app_props, channel::RoomRequest, validate};
 use dioxus::prelude::*;
 use keyboard_types::Key;
 use std::sync::Arc;
@@ -31,28 +31,17 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                     let app_props = app_props.read().clone();
                     let username = username.clone();
                     async move {
-                        let cleaned_input: String = username
-                            .get()
-                            .trim()
-                            .chars()
-                            .filter(|c| c.is_alphanumeric() || c.is_whitespace())
-                            .collect::<String>()
-                            .split_whitespace()
-                            .collect::<Vec<&str>>()
-                            .join(" ");
-                        let final_name = if cleaned_input.is_empty() {
-                            username::random_username()
-                        } else {
-                            cleaned_input
-                        };
-                        if &final_name != username.get().as_str() {
-                            username.set(final_name.clone());
-                        }
-                        app_props.session.set("username", final_name.clone());
-                        let new_name_str: Arc<str> = Arc::from(final_name.to_owned());
+                        let validated_name = validate::username(username.get());
+                        username.set(validated_name.clone());
+                        app_props.session.set("username", validated_name.clone());
                         _ = app_props
                             .channel
-                            .send(RoomRequest::NameChange(app_props.session_id, new_name_str))
+                            .send(
+                                RoomRequest::NameChange(
+                                    app_props.session_id,
+                                    Arc::from(validated_name.to_owned()),
+                                ),
+                            )
                             .await;
                     }
                 },
