@@ -61,10 +61,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
 
             match result {
                 Ok(response) => match response {
-                    RoomResponse::ListParticipants(participants_list) => {
+                    RoomResponse::RoomState(participants_list, room_visibility) => {
                         *participants.write() = participants_list;
+                        estimate_visibility.set(room_visibility);
                     }
-                    _ => {}
                 },
                 Err(err) => {
                     tracing::error!(

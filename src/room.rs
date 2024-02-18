@@ -99,7 +99,6 @@ impl Room {
                     session_id,
                     estimate_point
                 );
-                response.send(RoomResponse::EstimateRecieved).unwrap();
                 let mut participants = self.participants.lock().await;
 
                 if let Some(participant) = participants.get_mut(&session_id) {
@@ -172,8 +171,9 @@ impl Room {
                     .send(RoomEvent::Joined(new_participant));
             }
         };
+        let room_visibility = self.visibility.lock().await.clone();
         response
-            .send(RoomResponse::ListParticipants(map.clone()))
+            .send(RoomResponse::RoomState(map.clone(), room_visibility))
             .unwrap();
     }
 

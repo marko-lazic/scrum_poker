@@ -17,8 +17,7 @@ pub enum RoomRequest {
 
 #[derive(Clone, Debug)]
 pub enum RoomResponse {
-    ListParticipants(HashMap<Uuid, Participant>),
-    EstimateRecieved,
+    RoomState(HashMap<Uuid, Participant>, EstimateVisibility),
 }
 
 #[derive(Clone, Debug)]
