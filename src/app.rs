@@ -1,6 +1,7 @@
 use crate::actions::{DeleteEstimatesButton, DeleteEstimatesModal, ShowEstimatesButton};
-use crate::channel::{Estimate, EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
+use crate::channel::{EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
 use crate::deck::Deck;
+use crate::estimate::Estimate;
 use crate::name::Name;
 use crate::room::Participant;
 use crate::table::Table;

@@ -25,6 +25,7 @@ mod channel;
 mod database;
 mod deck;
 mod error;
+mod estimate;
 mod logs;
 mod name;
 mod room;

@@ -1,7 +1,4 @@
-use crate::{
-    app::use_app_props,
-    channel::{Estimate, RoomRequest},
-};
+use crate::{app::use_app_props, channel::RoomRequest, estimate::Estimate};
 use dioxus::prelude::*;
 
 #[component]
@@ -48,7 +45,7 @@ pub fn Card(cx: Scope, value: Estimate) -> Element {
                     async move {
                         let result = app_props
                             .channel
-                            .send(RoomRequest::Estimate(app_props.session_id, estimate_point))
+                            .send(RoomRequest::SendEstimate(app_props.session_id, estimate_point))
                             .await;
                         match result {
                             Ok(response) => {

@@ -1,7 +1,4 @@
-use crate::{
-    channel::{Estimate, EstimateVisibility},
-    room::Participant,
-};
+use crate::{channel::EstimateVisibility, estimate::Estimate, room::Participant};
 use dioxus::prelude::*;
 use itertools::Itertools;
 use std::collections::HashMap;

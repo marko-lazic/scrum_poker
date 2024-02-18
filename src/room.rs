@@ -1,5 +1,6 @@
-use crate::channel::{
-    Estimate, EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse,
+use crate::{
+    channel::{EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse},
+    estimate::Estimate,
 };
 use std::{
     collections::HashMap,
@@ -92,7 +93,7 @@ impl Room {
             RoomRequest::Remove(session_id) => {
                 self.remove_participant(session_id).await;
             }
-            RoomRequest::Estimate(session_id, estimate_point) => {
+            RoomRequest::SendEstimate(session_id, estimate_point) => {
                 tracing::trace!(
                     "Update estimate session_id: {:?}, estimate: {}",
                     session_id,
