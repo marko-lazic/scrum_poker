@@ -67,8 +67,16 @@ pub fn ShowEstimatesButton(
 pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
     let app_props = use_app_props(cx);
 
-    let blur_eval_provider = use_eval(cx);
-    _ = blur_eval_provider(r#"document.getElementById("deleteButton").focus();"#).unwrap();
+    let focus_delete_button_eval_provider = use_eval(cx);
+    _ = focus_delete_button_eval_provider(
+        r#"
+                    var btn = document.getElementById("deleteButton");
+                    if (btn != null) {
+                        btn.focus();
+                    }
+                    "#,
+    )
+    .unwrap();
     if **show_modal {
         cx.render(rsx! {
             // Background overlay

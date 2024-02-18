@@ -1,6 +1,6 @@
 use crate::actions::{DeleteEstimatesButton, DeleteEstimatesModal, ShowEstimatesButton};
-use crate::card::Card;
 use crate::channel::{Estimate, EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
+use crate::deck::Deck;
 use crate::name::Name;
 use crate::room::Participant;
 use crate::table::Table;
@@ -28,6 +28,8 @@ pub fn App(cx: Scope<AppProps>) -> Element {
     let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
     let estimate_visibility = use_state(cx, || EstimateVisibility::Hidden);
 
+    let card_deselect_eval_provider = use_eval(cx);
+
     use_on_destroy(cx, {
         let app_props = cx.props.clone();
         move || {
@@ -51,6 +53,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
         let participant = Participant::new(app_props.session_id, Arc::from(username.get().clone()));
         let add_participant = RoomRequest::Join(participant);
 
+        let card_deselect_eval_provider = card_deselect_eval_provider.clone();
         async move {
             let mut rx = app_props.channel.subscribe();
             let result = app_props.channel.send(add_participant).await;
@@ -94,6 +97,15 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                                 p.estimate = Estimate::None;
                             }
                             estimate_visibility.set(EstimateVisibility::Hidden);
+                            _ = card_deselect_eval_provider(
+                                r#"
+                                var cardInputs = document.getElementsByName("card-radio-input");
+                                for (var i = 0; i < cardInputs.length; i++) {
+                                    cardInputs[i].checked = false;
+                                }
+                            "#,
+                            )
+                            .unwrap();
                         }
                         RoomEvent::Left(session_id) => {
                             participants.write().remove(&session_id);
@@ -140,23 +152,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
             div { class: "mx-auto max-w-4xl",
                 div { class: "relative flex px-10", Name { username: username.clone() } }
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
-                    div { class: "divide-y divide-gray-300/50 ",
-                        div { class: "flex flex-wrap gap-4",
-                            Card { value: Estimate::QuestionMark }
-                            Card { value: Estimate::Coffe }
-                            Card { value: Estimate::Zero }
-                            Card { value: Estimate::Half }
-                            Card { value: Estimate::One }
-                            Card { value: Estimate::Two }
-                            Card { value: Estimate::Three }
-                            Card { value: Estimate::Five }
-                            Card { value: Estimate::Eight }
-                            Card { value: Estimate::Thirteen }
-                            Card { value: Estimate::Twenty }
-                            Card { value: Estimate::Fourty }
-                            Card { value: Estimate::Hundred }
-                        }
-                    }
+                    div { class: "divide-y divide-gray-300/50 ", Deck {} }
                 }
                 div { class: "relative flex px-10 py-2", h1 { class: "text-slate-600 font-semibold", "Results" } }
                 div { class: "relative flex px-11 py-5 sm:mx-auto sm:max-w-4x justify-between",

@@ -21,9 +21,9 @@ use uuid::Uuid;
 
 mod actions;
 mod app;
-mod card;
 mod channel;
 mod database;
+mod deck;
 mod error;
 mod logs;
 mod name;
