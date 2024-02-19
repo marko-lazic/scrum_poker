@@ -1,17 +1,12 @@
-use crate::{
-    channel::{RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse},
-    database,
-    room::Room,
-};
-use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
+use crate::{database, room_handler::RoomHandler};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
     pub addr: std::net::SocketAddr,
     pub pool: Arc<database::Pool>,
     pub view: dioxus_liveview::LiveViewPool,
-    pub room_channels: Arc<RwLock<HashMap<String, RoomChannel>>>,
+    pub room_handler: RoomHandler,
 }
 
 impl AppState {
@@ -22,57 +17,7 @@ impl AppState {
             addr: ([127, 0, 0, 1], 3030).into(),
             pool: Arc::new(pool),
             view: dioxus_liveview::LiveViewPool::new(),
-            room_channels: Arc::new(RwLock::new(HashMap::new())),
+            room_handler: RoomHandler::new(),
         }
-    }
-
-    pub async fn spawn_or_find_room(&self, room_id: Arc<str>) -> RoomChannel {
-        let channel = self.find_channel(room_id.clone()).await;
-        if channel.is_some() {
-            return channel.unwrap();
-        } else {
-            return self.spawn_room(room_id.clone()).await;
-        }
-    }
-
-    async fn spawn_room(&self, room_id: Arc<str>) -> RoomChannel {
-        let (ready_notifier, ready_receiver) = oneshot::channel();
-        let (room_tx, room_rx) = self.create_mpsc_channel();
-        let (room_bc_tx, _room_bc_rx) = self.create_broadcast_channel();
-        let rid = room_id.clone();
-        let new_room_ch = RoomChannel {
-            tx: room_tx,
-            broadcast: room_bc_tx,
-        };
-        let channel = new_room_ch.clone();
-        tokio::spawn(async move {
-            let room = Room::new(rid, channel);
-            room.run(room_rx, ready_notifier).await;
-        });
-
-        ready_receiver.await.ok();
-
-        let mut w_rooms = self.room_channels.write().await;
-
-        w_rooms.insert(room_id.to_string(), new_room_ch.clone());
-
-        return new_room_ch;
-    }
-
-    async fn find_channel(&self, room_id: Arc<str>) -> Option<RoomChannel> {
-        let r_rooms = self.room_channels.read().await;
-        return r_rooms.get(&room_id.to_string()).cloned();
-    }
-
-    fn create_mpsc_channel(&self) -> (mpsc::Sender<RoomMessage>, mpsc::Receiver<RoomMessage>) {
-        let (tx, rx) = mpsc::channel::<(RoomRequest, oneshot::Sender<RoomResponse>)>(10);
-        return (tx, rx);
-    }
-
-    fn create_broadcast_channel(
-        &self,
-    ) -> (broadcast::Sender<RoomEvent>, broadcast::Receiver<RoomEvent>) {
-        let (tx, rx) = broadcast::channel::<RoomEvent>(10);
-        return (tx, rx);
     }
 }

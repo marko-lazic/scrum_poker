@@ -43,18 +43,10 @@ pub fn Card(cx: Scope, value: Estimate) -> Element {
                     let app_props = app_props.read().clone();
                     let estimate_point = cx.props.value.clone();
                     async move {
-                        let result = app_props
+                        _ = app_props
                             .channel
                             .send(RoomRequest::SendEstimate(app_props.session_id, estimate_point))
                             .await;
-                        match result {
-                            Ok(response) => {
-                                tracing::trace!("Server received {:?}", response);
-                            }
-                            Err(err) => {
-                                tracing::error!("Card estimate send error {:?}", err);
-                            }
-                        }
                     }
                 }
             }

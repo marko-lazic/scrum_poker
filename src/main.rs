@@ -29,6 +29,7 @@ mod estimate;
 mod logs;
 mod name;
 mod room;
+mod room_handler;
 mod state;
 mod table;
 mod username;
@@ -120,7 +121,7 @@ async fn ws_handler(
     State(state): State<AppState>,
 ) -> Response {
     let session_id = session.get_session_id().uuid();
-    let channel = state.spawn_or_find_room(room_id.clone()).await;
+    let channel = state.room_handler.spawn_or_find_room(room_id.clone()).await;
 
     let app_props = AppProps {
         session: session.clone(),

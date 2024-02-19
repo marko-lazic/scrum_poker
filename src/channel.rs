@@ -1,4 +1,9 @@
-use crate::{error::ScError, estimate::Estimate, room::Participant};
+use crate::{
+    error::ScError,
+    estimate::Estimate,
+    room::Participant,
+    room_handler::{CtrlRequest, CtrlResponse},
+};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, mpsc, oneshot};
 use uuid::Uuid;
@@ -21,7 +26,7 @@ pub enum RoomResponse {
 }
 
 #[derive(Clone, Debug)]
-pub enum RoomEvent {
+pub enum RoomBroadcastMessage {
     Joined(Participant),
     ParticipantUpdate(Participant),
     ChangedVisibility(EstimateVisibility),
@@ -54,11 +59,12 @@ impl EstimateVisibility {
 }
 
 pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
+pub type CtrlMessage = (CtrlRequest, oneshot::Sender<CtrlResponse>);
 
 #[derive(Clone, Debug)]
 pub struct RoomChannel {
     pub tx: mpsc::Sender<RoomMessage>,
-    pub broadcast: broadcast::Sender<RoomEvent>,
+    pub broadcast: broadcast::Sender<RoomBroadcastMessage>,
 }
 
 impl RoomChannel {
@@ -96,7 +102,7 @@ impl RoomChannel {
         return handle;
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<RoomEvent> {
+    pub fn subscribe(&self) -> broadcast::Receiver<RoomBroadcastMessage> {
         return self.broadcast.subscribe();
     }
 }

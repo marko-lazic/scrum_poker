@@ -1,6 +1,10 @@
 use crate::{
-    channel::{EstimateVisibility, RoomChannel, RoomEvent, RoomMessage, RoomRequest, RoomResponse},
+    channel::{
+        EstimateVisibility, RoomBroadcastMessage, RoomChannel, RoomMessage, RoomRequest,
+        RoomResponse,
+    },
     estimate::Estimate,
+    room_handler::{CtrlRequest, CtrlResponse, HealthStatus},
 };
 use std::{
     collections::HashMap,
@@ -8,6 +12,7 @@ use std::{
     sync::Arc,
 };
 use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio_stream::{wrappers::IntervalStream, StreamExt};
 use uuid::Uuid;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -70,16 +75,38 @@ impl Room {
     pub async fn run(
         &self,
         mut room_rx: mpsc::Receiver<RoomMessage>,
-        ready_notifier: oneshot::Sender<()>,
+        mut ctrl: mpsc::Receiver<(CtrlRequest, oneshot::Sender<CtrlResponse>)>,
     ) {
-        tracing::trace!("Room {} ready.", self.room_id);
-        _ = ready_notifier.send(());
-
+        tracing::info!("Room {} ready.", self.room_id);
+        let mut interval_stream = self.create_shutdown_interval_stream().await;
         loop {
-            while let Some((request, response)) = room_rx.recv().await {
-                self.update_room(request, response).await;
+            tokio::select! {
+                Some((request, response)) = room_rx.recv() => {
+                    self.update_room(request, response).await;
+                },
+                Some(_tx) = interval_stream.next() => {
+                    if self.is_room_empty().await {
+                        tracing::trace!("Room is empty. Shutting down room_id: {}", self.room_id);
+                        break;
+                    }
+                },
+                Some(ctl) = ctrl.recv() => {
+                    match ctl {
+                        (CtrlRequest::HealthCheck, rtx) => {
+                            _ = rtx.send(CtrlResponse::Health(HealthStatus::Healthy)).expect("Unable to send health status");
+                        },
+                    }
+                }
             }
         }
+        tracing::info!("Room {} has shutdown", self.room_id);
+    }
+
+    async fn create_shutdown_interval_stream(&self) -> IntervalStream {
+        let mut interval_stream =
+            IntervalStream::new(tokio::time::interval(tokio::time::Duration::from_secs(5)));
+        _ = interval_stream.next().await;
+        return interval_stream;
     }
 
     async fn update_room(&self, request: RoomRequest, response: oneshot::Sender<RoomResponse>) {
@@ -106,7 +133,7 @@ impl Room {
                     _ = self
                         .channel
                         .broadcast
-                        .send(RoomEvent::ParticipantUpdate(participant.clone()));
+                        .send(RoomBroadcastMessage::ParticipantUpdate(participant.clone()));
                 } else {
                     tracing::error!(
                         "Update estimate: Participant with session_id {} not found in room {}",
@@ -121,14 +148,17 @@ impl Room {
                 _ = self
                     .channel
                     .broadcast
-                    .send(RoomEvent::ChangedVisibility(visibility.clone()));
+                    .send(RoomBroadcastMessage::ChangedVisibility(visibility.clone()));
             }
             RoomRequest::DeleteEstimates => {
                 self.delete_estimates().await;
                 let mut visibility = self.visibility.lock().await;
                 *visibility = EstimateVisibility::Hidden;
 
-                _ = self.channel.broadcast.send(RoomEvent::EstimatesDeleted);
+                _ = self
+                    .channel
+                    .broadcast
+                    .send(RoomBroadcastMessage::EstimatesDeleted);
             }
             RoomRequest::Heartbeat(session_id) => {
                 self.heartbeat_participant(session_id).await;
@@ -147,7 +177,7 @@ impl Room {
                 _ = self
                     .channel
                     .broadcast
-                    .send(RoomEvent::ParticipantUpdate(participant.clone()));
+                    .send(RoomBroadcastMessage::ParticipantUpdate(participant.clone()));
             }
             None => {
                 tracing::warn!("Tried to change participant username but not found in room");
@@ -168,7 +198,7 @@ impl Room {
                 _ = self
                     .channel
                     .broadcast
-                    .send(RoomEvent::Joined(new_participant));
+                    .send(RoomBroadcastMessage::Joined(new_participant));
             }
         };
         let room_visibility = self.visibility.lock().await.clone();
@@ -192,7 +222,9 @@ impl Room {
         let channel = self.channel.clone();
         tokio::task::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            _ = channel.broadcast.send(RoomEvent::RoomRequestedHeartbeat);
+            _ = channel
+                .broadcast
+                .send(RoomBroadcastMessage::RoomRequestedHeartbeat);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             _ = channel.send(RoomRequest::Remove(session_id)).await;
         });
@@ -206,7 +238,10 @@ impl Room {
                 if participant.status == ParticipantStatus::Left {
                     map.remove(&session_id);
                     tracing::trace!("Pemoving participant");
-                    _ = self.channel.broadcast.send(RoomEvent::Left(session_id));
+                    _ = self
+                        .channel
+                        .broadcast
+                        .send(RoomBroadcastMessage::Left(session_id));
                 }
             }
             None => {
@@ -232,6 +267,15 @@ impl Room {
         let mut map = self.participants.lock().await;
         for (_, p) in map.iter_mut() {
             p.estimate = Estimate::None;
+        }
+    }
+
+    async fn is_room_empty(&self) -> bool {
+        let participants = self.participants.lock().await;
+        if participants.len() == 0 {
+            return true;
+        } else {
+            return false;
         }
     }
 }

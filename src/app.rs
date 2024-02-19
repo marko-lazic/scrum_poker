@@ -1,5 +1,5 @@
 use crate::actions::{DeleteEstimatesButton, DeleteEstimatesModal, ShowEstimatesButton};
-use crate::channel::{EstimateVisibility, RoomEvent, RoomRequest, RoomResponse};
+use crate::channel::{EstimateVisibility, RoomBroadcastMessage, RoomRequest, RoomResponse};
 use crate::deck::Deck;
 use crate::estimate::Estimate;
 use crate::name::Name;
@@ -79,10 +79,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 let result = rx.recv().await;
                 match result {
                     Ok(msg) => match msg {
-                        RoomEvent::Joined(p) => {
+                        RoomBroadcastMessage::Joined(p) => {
                             participants.write().insert(p.session_id, p);
                         }
-                        RoomEvent::ParticipantUpdate(p) => {
+                        RoomBroadcastMessage::ParticipantUpdate(p) => {
                             participants.write().insert(p.session_id, p.clone());
                             if p.session_id == app_props.session_id
                                 && p.name.as_ref() != username.get().as_str()
@@ -90,10 +90,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                                 username.set(p.name.to_string());
                             }
                         }
-                        RoomEvent::ChangedVisibility(v) => {
+                        RoomBroadcastMessage::ChangedVisibility(v) => {
                             estimate_visibility.set(v);
                         }
-                        RoomEvent::EstimatesDeleted => {
+                        RoomBroadcastMessage::EstimatesDeleted => {
                             for (_, p) in participants.write().iter_mut() {
                                 p.estimate = Estimate::None;
                             }
@@ -108,10 +108,10 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                             )
                             .unwrap();
                         }
-                        RoomEvent::Left(session_id) => {
+                        RoomBroadcastMessage::Left(session_id) => {
                             participants.write().remove(&session_id);
                         }
-                        RoomEvent::RoomRequestedHeartbeat => {
+                        RoomBroadcastMessage::RoomRequestedHeartbeat => {
                             _ = app_props
                                 .channel
                                 .send(RoomRequest::Heartbeat(app_props.session_id))
