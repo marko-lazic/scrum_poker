@@ -29,6 +29,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
     let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
     let estimate_visibility = use_state(cx, || EstimateVisibility::Hidden);
 
+    let card_select_eval_provider = use_eval(cx);
     let card_deselect_eval_provider = use_eval(cx);
 
     use_on_destroy(cx, {
@@ -54,6 +55,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
         let participant = Participant::new(app_props.session_id, Arc::from(username.get().clone()));
         let add_participant = RoomRequest::Join(participant);
 
+        let card_select_eval_provider = card_select_eval_provider.clone();
         let card_deselect_eval_provider = card_deselect_eval_provider.clone();
         async move {
             let mut rx = app_props.channel.subscribe();
@@ -62,7 +64,24 @@ pub fn App(cx: Scope<AppProps>) -> Element {
             match result {
                 Ok(response) => match response {
                     RoomResponse::RoomState(participants_list, room_visibility) => {
+                        if let Some(my_participant) = participants_list.get(&app_props.session_id) {
+                            let index = i32::from(my_participant.estimate.clone());
+                            if index > -1 {
+                                let eval = card_select_eval_provider(
+                                    r#"
+                                    let index = await dioxus.recv();
+                                    var cardInputs = document.getElementsByName("card-radio-input");
+                                    cardInputs[index].checked = true;
+                                "#,
+                                )
+                                .unwrap();
+
+                                eval.send(index.into()).unwrap();
+                            }
+                        }
+
                         *participants.write() = participants_list;
+
                         estimate_visibility.set(room_visibility);
                     }
                 },

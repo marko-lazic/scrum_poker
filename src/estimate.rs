@@ -45,3 +45,24 @@ impl From<Estimate> for Arc<str> {
         }
     }
 }
+
+impl From<Estimate> for i32 {
+    fn from(estimate: Estimate) -> i32 {
+        match estimate {
+            Estimate::None => -1,
+            Estimate::QuestionMark => 0,
+            Estimate::Coffe => 1,
+            Estimate::Zero => 2,
+            Estimate::Half => 3,
+            Estimate::One => 4,
+            Estimate::Two => 5,
+            Estimate::Three => 6,
+            Estimate::Five => 7,
+            Estimate::Eight => 8,
+            Estimate::Thirteen => 9,
+            Estimate::Twenty => 10,
+            Estimate::Fourty => 11,
+            Estimate::Hundred => 12,
+        }
+    }
+}
