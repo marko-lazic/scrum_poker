@@ -4,7 +4,7 @@ use crate::{
         RoomResponse,
     },
     estimate::Estimate,
-    room_handler::{CtrlRequest, CtrlResponse, HealthStatus},
+    room_pool::{CtrlRequest, CtrlResponse, HealthStatus, RoomPoolChannel},
 };
 use std::{
     collections::HashMap,
@@ -14,6 +14,8 @@ use std::{
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio_stream::{wrappers::IntervalStream, StreamExt};
 use uuid::Uuid;
+
+pub type RoomId = Arc<str>;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum ParticipantStatus {
@@ -56,14 +58,14 @@ impl Eq for Participant {}
 
 #[derive(Debug)]
 pub struct Room {
-    pub room_id: Arc<str>,
+    pub room_id: RoomId,
     pub channel: RoomChannel,
     pub visibility: Mutex<EstimateVisibility>,
     pub participants: Mutex<HashMap<Uuid, Participant>>,
 }
 
 impl Room {
-    pub fn new(room_id: Arc<str>, channel: RoomChannel) -> Self {
+    pub fn new(room_id: RoomId, channel: RoomChannel) -> Self {
         Room {
             room_id,
             channel,
@@ -76,6 +78,7 @@ impl Room {
         &self,
         mut room_rx: mpsc::Receiver<RoomMessage>,
         mut ctrl: mpsc::Receiver<(CtrlRequest, oneshot::Sender<CtrlResponse>)>,
+        room_pool_channel: RoomPoolChannel,
     ) {
         tracing::info!("Room {} ready.", self.room_id);
         let mut interval_stream = self.create_shutdown_interval_stream().await;
@@ -87,6 +90,7 @@ impl Room {
                 Some(_tx) = interval_stream.next() => {
                     if self.is_room_empty().await {
                         tracing::trace!("Room is empty. Shutting down room_id: {}", self.room_id);
+                        _ = room_pool_channel.shutdown(&self.room_id).await;
                         break;
                     }
                 },
@@ -99,7 +103,7 @@ impl Room {
                 }
             }
         }
-        tracing::info!("Room {} has shutdown", self.room_id);
+        tracing::trace!("Room {} has been shutdown", self.room_id);
     }
 
     async fn create_shutdown_interval_stream(&self) -> IntervalStream {

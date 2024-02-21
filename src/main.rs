@@ -14,6 +14,7 @@ use axum_session::{
     SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
 };
 use channel::RoomChannel;
+use room::RoomId;
 use std::sync::Arc;
 use surrealdb::engine::remote::ws::Client;
 use tower_http::services::ServeDir;
@@ -29,7 +30,7 @@ mod estimate;
 mod logs;
 mod name;
 mod room;
-mod room_handler;
+mod room_pool;
 mod state;
 mod table;
 mod username;
@@ -41,7 +42,7 @@ pub struct AppProps {
     _pool: Arc<database::Pool>,
     session: SessionSurrealSession<Client>,
     session_id: Uuid,
-    room_id: Arc<str>,
+    room_id: RoomId,
     channel: RoomChannel,
 }
 
@@ -81,7 +82,7 @@ async fn root() -> Redirect {
     Redirect::to(format!("/{room_id}").as_str())
 }
 
-async fn room_handler(State(state): State<AppState>, Path(room_id): Path<Arc<str>>) -> Response {
+async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>) -> Response {
     let validated_room_id = validate::room_id(room_id.clone());
 
     if validated_room_id != room_id.clone() {
@@ -111,17 +112,20 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<Arc<str
         glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws/{room_id}"))
     ));
 
-    return html.into_response();
+    html.into_response()
 }
 
 async fn ws_handler(
-    Path(room_id): Path<Arc<str>>,
+    Path(room_id): Path<RoomId>,
     ws: WebSocketUpgrade,
     session: SessionSurrealSession<Client>,
     State(state): State<AppState>,
 ) -> Response {
     let session_id = session.get_session_id().uuid();
-    let channel = state.room_handler.spawn_or_find_room(room_id.clone()).await;
+    let Ok(channel) = state.room_pool.spawn(&room_id).await else {
+        tracing::error!("Failed to spawn room_id: {}", room_id);
+        return root().await.into_response();
+    };
 
     let app_props = AppProps {
         session: session.clone(),

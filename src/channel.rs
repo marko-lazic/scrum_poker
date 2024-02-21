@@ -1,9 +1,4 @@
-use crate::{
-    error::ScError,
-    estimate::Estimate,
-    room::Participant,
-    room_handler::{CtrlRequest, CtrlResponse},
-};
+use crate::{error::ScError, estimate::Estimate, room::Participant};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, mpsc, oneshot};
 use uuid::Uuid;
@@ -50,16 +45,11 @@ impl EstimateVisibility {
     }
 
     pub fn is_visible(&self) -> bool {
-        if *self == EstimateVisibility::Visible {
-            return true;
-        } else {
-            return false;
-        }
+        *self == EstimateVisibility::Visible
     }
 }
 
 pub type RoomMessage = (RoomRequest, oneshot::Sender<RoomResponse>);
-pub type CtrlMessage = (CtrlRequest, oneshot::Sender<CtrlResponse>);
 
 #[derive(Clone, Debug)]
 pub struct RoomChannel {
@@ -74,7 +64,7 @@ impl RoomChannel {
 
         let result: Result<RoomResponse, ScError> = handle.await?;
 
-        return result;
+        result
     }
 
     async fn spawn_send(
@@ -84,25 +74,21 @@ impl RoomChannel {
         let tx = self.tx.clone();
         let (resp_tx, resp_rx) = oneshot::channel();
 
-        let handle = tokio::spawn(async move {
-            match tx.send((msg, resp_tx)).await {
-                Ok(_) => {
-                    // tracing::info!("Message sent successfully");
-                    return match resp_rx.await {
-                        Ok(response) => Ok(response),
-                        Err(err) => Err(ScError::OneshotRecieveError(err)),
-                    };
-                }
+        tokio::spawn(async move {
+            match tx.send((msg.clone(), resp_tx)).await {
+                Ok(_) => match resp_rx.await {
+                    Ok(response) => Ok(response),
+                    Err(err) => Err(ScError::OneshotRecieveError(err)),
+                },
                 Err(err) => {
-                    tracing::info!("Error sending message: {}", err);
-                    return Err(ScError::MpscSendError(err));
+                    tracing::error!("Error sending message: {:?}, error: {}", msg, err);
+                    Err(ScError::RoomMessageSendError(err))
                 }
             }
-        });
-        return handle;
+        })
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RoomBroadcastMessage> {
-        return self.broadcast.subscribe();
+        self.broadcast.subscribe()
     }
 }

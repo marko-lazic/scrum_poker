@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::username;
+use crate::{room::RoomId, username};
 
 pub const ALPHABET_AND_NUMBERS: [char; 62] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
@@ -27,7 +27,7 @@ pub fn username(username: &String) -> String {
     return validated_name;
 }
 
-pub fn room_id(room_id: Arc<str>) -> Arc<str> {
+pub fn room_id(room_id: RoomId) -> RoomId {
     let filtered_chars: String = room_id
         .chars()
         .filter(|c| ALPHABET_AND_NUMBERS.contains(c))

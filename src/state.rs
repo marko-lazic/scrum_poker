@@ -1,4 +1,7 @@
-use crate::{database, room_handler::RoomHandler};
+use crate::{
+    database,
+    room_pool::{RoomPool, RoomPoolChannel},
+};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -6,7 +9,7 @@ pub struct AppState {
     pub addr: std::net::SocketAddr,
     pub pool: Arc<database::Pool>,
     pub view: dioxus_liveview::LiveViewPool,
-    pub room_handler: RoomHandler,
+    pub room_pool: RoomPoolChannel,
 }
 
 impl AppState {
@@ -17,7 +20,7 @@ impl AppState {
             addr: ([127, 0, 0, 1], 3030).into(),
             pool: Arc::new(pool),
             view: dioxus_liveview::LiveViewPool::new(),
-            room_handler: RoomHandler::new(),
+            room_pool: RoomPool::spawn(),
         }
     }
 }
