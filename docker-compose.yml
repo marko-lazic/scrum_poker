@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  server:
+    container_name: scrumpoker.dev.server
+    build: .
+    restart: unless-stopped
+    environment:
+      - HOST_ADDRESS=0.0.0.0:3030
+      - WS_ADDRESS=ws://0.0.0.0:3030
+      - DB_ADDRESS=ws://scrumpoker.dev.db:8000
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+    ports:
+      - 3030:3030
+    depends_on:
+      - db
+
+  db:
+    container_name: scrumpoker.dev.db
+    image: surrealdb/surrealdb:v1.2.1
+    restart: unless-stopped
+    user: root
+    command: start --auth --user root --pass root file://scrumpoker.db
+    ports:
+      - 8000:8000
+    volumes:
+      - scrumpoker-db:/scrumpoker.db
+
+volumes:
+  scrumpoker-db:

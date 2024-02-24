@@ -36,10 +36,10 @@ Build scrumpoker Dockerfile:
 docker build -t scrumpoker:latest .
 ```
 
-To run scrumpoker in docker you will either need to have local database running or in docker and then attach both the database and app to the network.
+To run scrumpoker in docker check `docker-compose.yml` file. You can build the image with --build flag:
 
 ```shell
-docker run --rm --name scrumpoker -p 3030:3030 scrumpoker:latest
+docker compose up --build
 ```
 
 List of scrumpoker environment variables:
