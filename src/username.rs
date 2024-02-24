@@ -1,7 +1,7 @@
 use axum_session::SessionSurrealPool;
-use surrealdb::engine::remote::ws::Client;
+use surrealdb::engine::any::Any;
 
-pub fn get_username(session: &axum_session::Session<SessionSurrealPool<Client>>) -> String {
+pub fn get_username(session: &axum_session::Session<SessionSurrealPool<Any>>) -> String {
     let mut username: String = session.get("username").unwrap_or("".to_string());
     if username.trim().is_empty() {
         username = random_username();

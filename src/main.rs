@@ -16,7 +16,7 @@ use axum_session::{
 use channel::RoomChannel;
 use room::RoomId;
 use std::sync::Arc;
-use surrealdb::engine::remote::ws::Client;
+use surrealdb::engine::any::Any;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
@@ -40,7 +40,7 @@ mod validate;
 pub struct AppProps {
     // TODO: Use or remove pool
     _pool: Arc<database::Pool>,
-    session: SessionSurrealSession<Client>,
+    session: SessionSurrealSession<Any>,
     session_id: Uuid,
     room_id: RoomId,
     channel: RoomChannel,
@@ -48,6 +48,7 @@ pub struct AppProps {
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().expect(".env file not found");
     logs::init_tracing();
     let app_state = AppState::new();
     let addr = app_state.addr;
@@ -90,18 +91,18 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>
         return redirect.into_response();
     }
 
-    let addr = state.addr;
+    let ws_addr = state.ws_addr;
     let html = Html(format!(
         r#"
     <!DOCTYPE html>
     <html>
     <head>
         <title>Scrum Poker</title>
-        <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
-        <link rel="stylesheet" href="/public/tailwind.css">
-        <link rel="stylesheet" href="/public/style.css">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2"></script>
+        <meta name="color-scheme" content="light only" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/x-icon" href="/public/favicon.ico" />
+        <link rel="stylesheet" href="/public/tailwind.css" />
+        <link rel="stylesheet" href="/public/style.css" />
         <script src="/public/sp.js"></script>
     </head>
     <body> <div id="main"></div> </body>
@@ -109,7 +110,7 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>
     </html>
     "#,
         // Create the glue code to connect to the WebSocket on the "/ws" route
-        glue = dioxus_liveview::interpreter_glue(&format!("ws://{addr}/ws/{room_id}"))
+        glue = dioxus_liveview::interpreter_glue(&format!("{ws_addr}/ws/{room_id}"))
     ));
 
     html.into_response()
@@ -118,7 +119,7 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>
 async fn ws_handler(
     Path(room_id): Path<RoomId>,
     ws: WebSocketUpgrade,
-    session: SessionSurrealSession<Client>,
+    session: SessionSurrealSession<Any>,
     State(state): State<AppState>,
 ) -> Response {
     let session_id = session.get_session_id().uuid();

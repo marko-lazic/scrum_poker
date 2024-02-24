@@ -23,7 +23,7 @@ title = "scrum_poker"
 reload_html = true
 
 # Which files or dirs will be monitored
-watch_path = ["src", "public", "Dioxus.toml"]
+watch_path = ["src", "public"]
 
 # uncomment line below if using Router
 index_on_404 = true
@@ -32,7 +32,7 @@ index_on_404 = true
 [web.resource]
 
 # CSS style file
-style = ["tailwind.css", "style.css"]
+style = ["/tailwind.css"]
 
 
 # Javascript code file

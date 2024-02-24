@@ -1,29 +1,76 @@
 # Scrum Poker
 A simple to use scrum poker game built in Rust. Free and Open Source Forever!
 
-## Local setup
-Install Dioxus CLI
+## Local Setup
+Install Dioxus CLI:
 ```shell
 cargo install dioxus-cli
 ```
-Install Tailwind CSS
+Install Tailwind CSS:
 ```shell
 npm install tailwindcss@latest
 ```
 You will also need Docker to run the databse.
 
-## Run
-Start database
+## Run Local And Docker Environment
+Start database:
 ```shell
-docker run --rm --pull always -p 8000:8000 surrealdb/surrealdb:v1.0.2 start --auth --user root --pass root
+docker run --rm --name scrumpokerdb -p 8000:8000 surrealdb/surrealdb:v1.2.1 start --auth --user root --pass root
 ```
 
-Start CSS CLI tool
+### To strart locally type following:
+
+Start CSS CLI tool:
 ```shell
-npx tailwindcss@experimental -i ./input.css -o ./public/tailwind.css --watch
+npx tailwindcss -i ./input.css -o ./public/tailwind.css --watch
 ```
 
-Start the server
+Start the server:
 ```shell
 dx serve --hot-reload --platform desktop
+```
+
+### You can also build scrumpoker with docker
+Build scrumpoker Dockerfile:
+```shell
+docker build -t scrumpoker:latest .
+```
+
+To run scrumpoker in docker you will either need to have local database running or in docker and then attach both the database and app to the network.
+
+```shell
+docker run --rm --name scrumpoker -p 3030:3030 scrumpoker:latest
+```
+
+List of scrumpoker environment variables:
+
+| Variable     | Default             |
+|--------------|---------------------|
+| HOST_ADDRESS | 127.0.0.1:3030      |
+| WS_ADDRESS   | ws://127.0.0.1:3030 |
+| DB_ADDRESS   | ws://localhost:8080 |
+| DB_USERNAME  | root                |
+| DB_PASSWORD  | root                |
+| DB_NS        | scrumpokerdb        |
+| DB_NAME      | Text                |
+
+## Deploy to Fly.io
+
+To deploy database change directory to `database` directory.
+```shell
+fly launch
+fly volumes create data --region otp --size 1
+fly secrets set SURREAL_USER=
+fly secrets set SURREAL_PASS=
+```
+
+Deploy scrumpoker app fromm project root directory.
+```shell
+fly launch
+fly secrets set DB_ADDRESS=wss://scrumpokerdb.fly.dev
+fly secrets set DB_USERNAME=
+fly secrets set DB_PASSWORD=
+fly secrets set HOST_ADDRESS=0.0.0.0:3030 
+fly secrets set WS_ADDRESS=wss://scrumpoker.fly.dev
+fly deploy
 ```

@@ -1,7 +1,9 @@
+use std::env;
+
 use deadpool::async_trait;
 use deadpool::managed;
-use surrealdb::engine::remote::ws::Client;
-use surrealdb::engine::remote::ws::Ws;
+use surrealdb::engine::any;
+use surrealdb::engine::any::Any;
 use surrealdb::opt::auth::Root;
 use surrealdb::Error;
 use surrealdb::Surreal;
@@ -12,25 +14,31 @@ pub struct Manager {}
 
 #[async_trait]
 impl managed::Manager for Manager {
-    type Type = Surreal<Client>;
+    type Type = Surreal<Any>;
     type Error = Error;
 
-    async fn create(&self) -> Result<Surreal<Client>, Error> {
-        // TODO: Replace unrwarp with retry task
-        let db = Surreal::new::<Ws>("localhost:8000").await.unwrap();
+    async fn create(&self) -> Result<Surreal<Any>, Error> {
+        let address = env::var("DB_ADDRESS").unwrap_or("ws://localhost:8000".into());
+        tracing::info!("Connecting to database address {address}");
+        let db = any::connect(address).await.unwrap();
+
+        let username = env::var("DB_USERNAME").unwrap_or("root".into());
+        let password = env::var("DB_PASSWORD").unwrap_or("root".into());
+        let ns = env::var("DB_NS").unwrap_or("scrumpokerdb".into());
+        let db_name = env::var("DB_NAME").unwrap_or("scrumpokerdb".into());
         db.signin(Root {
-            username: "root",
-            password: "root",
+            username: username.as_str(),
+            password: password.as_str(),
         })
         .await
         .unwrap();
-        db.use_ns("test").use_db("test").await.unwrap();
+        db.use_ns(ns).use_db(db_name).await.unwrap();
         Ok(db)
     }
 
     async fn recycle(
         &self,
-        _: &mut Surreal<Client>,
+        _: &mut Surreal<Any>,
         _: &managed::Metrics,
     ) -> managed::RecycleResult<Error> {
         Ok(())
