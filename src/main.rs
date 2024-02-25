@@ -102,7 +102,6 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="/public/favicon.ico" />
         <link rel="stylesheet" href="/public/tailwind.css" />
-        <link rel="stylesheet" href="/public/style.css" />
         <script src="/public/sp.js"></script>
     </head>
     <body> <div id="main"></div> </body>
