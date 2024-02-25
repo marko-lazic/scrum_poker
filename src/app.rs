@@ -174,16 +174,15 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "divide-y divide-gray-300/50 ", Deck {} }
                 }
-                div { class: "relative flex px-10 py-2", h1 { class: "text-slate-600 font-semibold", "Results" } }
-                div { class: "relative flex px-11 py-5 sm:mx-auto sm:max-w-4x justify-between",
-                    div { span { "" } }
-                    div { span { "" } }
-                    div { span { "" } }
+                div { class: "relative flex px-10 pt-6 pb-0",
+                    h1 { class: "text-slate-600 text-lg font-semibold", "Results" }
+                }
+                div { class: "relative flex flex-row-reverse px-11 py-5 gap-x-8 md:gap-x-28",
+                    ShowEstimatesButton { estimate_visibility: estimate_visibility.clone() }
                     DeleteEstimatesButton {
                         estimate_visibility: estimate_visibility.clone(),
                         delete_estimates_modal_visibility: delete_estimates_modal_visibility.clone()
                     }
-                    ShowEstimatesButton { estimate_visibility: estimate_visibility.clone() }
                 }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
