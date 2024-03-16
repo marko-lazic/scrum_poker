@@ -7,7 +7,6 @@ use crate::room::Participant;
 use crate::table::Table;
 use crate::{username, AppProps};
 use dioxus::prelude::*;
-use fermi::use_init_atom_root;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -18,7 +17,6 @@ pub fn use_app_props(cx: &ScopeState) -> &UseSharedState<AppProps> {
 
 #[component]
 pub fn App(cx: Scope<AppProps>) -> Element {
-    use_init_atom_root(cx);
     use_shared_state_provider(cx, || cx.props.clone());
 
     let app_props = cx.props.clone();
