@@ -10,75 +10,57 @@ const WHITE_BTN_STYLE: &str = "text-slate-600 bg-slate-50 hover:bg-slate-100 foc
 
 #[component]
 pub fn DeleteEstimatesButton(
-    cx: Scope,
-    estimate_visibility: UseState<EstimateVisibility>,
-    delete_estimates_modal_visibility: UseState<bool>,
+    estimate_visibility: Signal<EstimateVisibility>,
+    delete_estimates_modal_visibility: Signal<bool>,
 ) -> Element {
-    let delete_estimates_btn_style = if estimate_visibility.is_visible() {
-        BLACK_BTN_STLYE
-    } else {
-        WHITE_BTN_STYLE
-    };
-    cx.render(rsx! {
+    rsx! {
         button {
-            class: "{delete_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
+            class: "inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
+            class: if estimate_visibility().is_visible() { BLACK_BTN_STLYE } else { WHITE_BTN_STYLE },
             onclick: move |_| {
                 delete_estimates_modal_visibility.set(true);
             },
             "Delete Estimates"
         }
-    })
+    }
 }
 
 #[component]
-pub fn ShowEstimatesButton(
-    cx: Scope,
-    estimate_visibility: UseState<EstimateVisibility>,
-) -> Element {
-    let app_props = use_app_props(cx);
+pub fn ShowEstimatesButton(estimate_visibility: Signal<EstimateVisibility>) -> Element {
+    let app_props = use_app_props();
 
-    let show_estimates_btn_style = if estimate_visibility.is_visible() {
-        WHITE_BTN_STYLE
-    } else {
-        BLACK_BTN_STLYE
-    };
-
-    let show_hide_text = if estimate_visibility.is_visible() {
-        "Hide"
-    } else {
-        "Show"
-    };
-
-    cx.render(rsx! {
+    rsx! {
         button {
-            class: "{show_estimates_btn_style} inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
+            class: "inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
+            class: if estimate_visibility().is_visible() { WHITE_BTN_STYLE } else { BLACK_BTN_STLYE },
             onclick: move |_| {
-                let app_props = app_props.clone();
                 async move {
-                    _ = app_props.read().channel.send(RoomRequest::ChangeVisibility).await;
+                    _ = app_props().channel.send(RoomRequest::ChangeVisibility).await;
                 }
             },
-            "{show_hide_text}"
+            if estimate_visibility().is_visible() {
+                "Hide"
+            } else {
+                "Show"
+            }
         }
-    })
+    }
 }
 
 #[component]
-pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
-    let app_props = use_app_props(cx);
+pub fn DeleteEstimatesModal(show_modal: Signal<bool>) -> Element {
+    let app_props = use_app_props();
 
-    let focus_delete_button_eval_provider = use_eval(cx);
-    _ = focus_delete_button_eval_provider(
+    _ = eval(
         r#"
                     var btn = document.getElementById("deleteButton");
                     if (btn != null) {
                         btn.focus();
                     }
                     "#,
-    )
-    .unwrap();
-    if **show_modal {
-        cx.render(rsx! {
+    );
+    if show_modal() {
+        rsx! {
             // Background overlay
             div {
                 class: "fixed inset-0 transition-opacity",
@@ -136,10 +118,8 @@ pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
                                 id: "deleteButton",
                                 class: "mt-3 w-full inline-flex items-center justify-center rounded-full border border-transparent px-8 py-4 bg-red-500 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm",
                                 onclick: move |_| {
-                                    let app_props = app_props.clone();
-                                    let show_modal = show_modal.clone();
                                     async move {
-                                        _ = app_props.read().channel.send(RoomRequest::DeleteEstimates).await;
+                                        _ = app_props().channel.send(RoomRequest::DeleteEstimates).await;
                                         show_modal.set(false);
                                     }
                                 },
@@ -149,7 +129,7 @@ pub fn DeleteEstimatesModal(cx: Scope, show_modal: UseState<bool>) -> Element {
                     }
                 }
             }
-        })
+        }
     } else {
         return None;
     }

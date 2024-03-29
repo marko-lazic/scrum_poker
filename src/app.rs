@@ -11,70 +11,54 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub fn use_app_props(cx: &ScopeState) -> &UseSharedState<AppProps> {
-    use_shared_state::<AppProps>(cx).expect("App props not provided")
+pub fn use_app_props() -> Signal<AppProps> {
+    use_context::<Signal<AppProps>>()
 }
 
-#[component]
-pub fn App(cx: Scope<AppProps>) -> Element {
-    use_shared_state_provider(cx, || cx.props.clone());
+pub fn App(props: AppProps) -> Element {
+    let app_props = use_signal(|| props);
+    use_context_provider(|| app_props);
 
-    let app_props = cx.props.clone();
-    let username = username::get_username(&app_props.session);
+    let mut username = use_signal(|| username::get_username(&app_props().session));
+    let mut participants = use_signal(|| HashMap::<Uuid, Participant>::new());
+    let mut estimate_visibility = use_signal(|| EstimateVisibility::Hidden);
 
-    let username = use_state(cx, || username);
-
-    let participants = use_ref(cx, || HashMap::<Uuid, Participant>::new());
-    let estimate_visibility = use_state(cx, || EstimateVisibility::Hidden);
-
-    let card_select_eval_provider = use_eval(cx);
-    let card_deselect_eval_provider = use_eval(cx);
-
-    use_on_destroy(cx, {
-        let app_props = cx.props.clone();
-        move || {
-            let channel = app_props.channel.clone();
-            tokio::task::spawn(async move {
-                _ = channel.send(RoomRequest::Leave(app_props.session_id)).await;
-                tracing::trace!(
-                    "Table component removed. Send ParticipantLeft {}",
-                    app_props.session_id
-                );
-            });
-        }
+    use_drop(move || {
+        let channel = app_props().channel;
+        let session_id = app_props().session_id;
+        tokio::task::spawn(async move {
+            _ = channel.send(RoomRequest::Leave(session_id)).await;
+            tracing::trace!(
+                "Table component removed. Send ParticipantLeft {}",
+                session_id
+            );
+        });
     });
 
-    use_future(cx, (), move |_| {
-        let app_props = cx.props.clone();
-        let participants = participants.clone();
-        let estimate_visibility = estimate_visibility.clone();
-        let username = username.clone();
-
-        let participant = Participant::new(app_props.session_id, Arc::from(username.get().clone()));
+    use_future(move || {
+        let participant = Participant::new(app_props().session_id, Arc::from(username()));
         let add_participant = RoomRequest::Join(participant);
 
-        let card_select_eval_provider = card_select_eval_provider.clone();
-        let card_deselect_eval_provider = card_deselect_eval_provider.clone();
         async move {
-            let mut rx = app_props.channel.subscribe();
-            let result = app_props.channel.send(add_participant).await;
+            let mut rx = app_props().channel.subscribe();
+            let result = app_props().channel.send(add_participant).await;
 
             match result {
                 Ok(response) => match response {
                     RoomResponse::RoomState(participants_list, room_visibility) => {
-                        if let Some(my_participant) = participants_list.get(&app_props.session_id) {
+                        if let Some(my_participant) = participants_list.get(&app_props().session_id)
+                        {
                             let index = i32::from(my_participant.estimate.clone());
                             if index > -1 {
-                                let eval = card_select_eval_provider(
+                                let card_select_eval = eval(
                                     r#"
                                     let index = await dioxus.recv();
                                     var cardInputs = document.getElementsByName("card-radio-input");
                                     cardInputs[index].checked = true;
                                 "#,
-                                )
-                                .unwrap();
+                                );
 
-                                eval.send(index.into()).unwrap();
+                                card_select_eval.send(index.into()).unwrap();
                             }
                         }
 
@@ -86,7 +70,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 Err(err) => {
                     tracing::error!(
                         "Failed to get list of participants, room_id {}, error: {:?}",
-                        app_props.room_id,
+                        app_props().room_id,
                         err
                     );
                 }
@@ -101,8 +85,8 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                         }
                         RoomBroadcastMessage::ParticipantUpdate(p) => {
                             participants.write().insert(p.session_id, p.clone());
-                            if p.session_id == app_props.session_id
-                                && p.name.as_ref() != username.get().as_str()
+                            if p.session_id == app_props().session_id
+                                && p.name.as_ref() != username.read().as_str()
                             {
                                 username.set(p.name.to_string());
                             }
@@ -115,29 +99,28 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                                 p.estimate = Estimate::None;
                             }
                             estimate_visibility.set(EstimateVisibility::Hidden);
-                            _ = card_deselect_eval_provider(
+                            let _card_deselect = eval(
                                 r#"
                                 var cardInputs = document.getElementsByName("card-radio-input");
                                 for (var i = 0; i < cardInputs.length; i++) {
                                     cardInputs[i].checked = false;
                                 }
                             "#,
-                            )
-                            .unwrap();
+                            );
                         }
                         RoomBroadcastMessage::Left(session_id) => {
                             participants.write().remove(&session_id);
                         }
                         RoomBroadcastMessage::RoomRequestedHeartbeat => {
-                            _ = app_props
+                            _ = app_props()
                                 .channel
-                                .send(RoomRequest::Heartbeat(app_props.session_id))
+                                .send(RoomRequest::Heartbeat(app_props().session_id))
                                 .await;
                         }
                     },
                     Err(err) => tracing::info!(
                         "Failed to get room event, room_id: {}, error {:?}",
-                        app_props.room_id,
+                        app_props().room_id,
                         err
                     ),
                 }
@@ -145,19 +128,8 @@ pub fn App(cx: Scope<AppProps>) -> Element {
         }
     });
 
-    let debug = use_state(cx, || false);
-    if *debug.get() == true {
-        cx.render(rsx! {
-            div {
-                h1 { "{cx.props.session_id}" }
-                h1 { "{cx.props.room_id}" }
-            }
-        });
-    }
-
-    let delete_estimates_modal_visibility = use_state(cx, || false);
-
-    cx.render(rsx! {
+    let delete_estimates_modal_visibility = use_signal(|| false);
+    rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {
                 src: "/public/beams.jpg",
@@ -168,7 +140,7 @@ pub fn App(cx: Scope<AppProps>) -> Element {
             div { class: "absolute inset-0 bg-[url(/public/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" }
 
             div { class: "mx-auto max-w-4xl",
-                div { class: "relative flex px-10", Name { username: username.clone() } }
+                div { class: "relative flex px-10", Name { username } }
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "divide-y divide-gray-300/50 ", Deck {} }
                 }
@@ -190,5 +162,5 @@ pub fn App(cx: Scope<AppProps>) -> Element {
                 DeleteEstimatesModal { show_modal: delete_estimates_modal_visibility.clone() }
             }
         }
-    })
+    }
 }

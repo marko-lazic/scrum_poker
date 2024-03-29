@@ -2,8 +2,8 @@ use crate::{app::use_app_props, channel::RoomRequest, estimate::Estimate};
 use dioxus::prelude::*;
 
 #[component]
-pub fn Deck(cx: Scope) -> Element {
-    cx.render(rsx! {
+pub fn Deck() -> Element {
+    rsx! {
         div {
             class: "flex flex-wrap justify-around gap-4",
             oninput: move |evt| {
@@ -23,14 +23,14 @@ pub fn Deck(cx: Scope) -> Element {
             Card { value: Estimate::Fourty }
             Card { value: Estimate::Hundred }
         }
-    })
+    }
 }
 
 #[component]
-pub fn Card(cx: Scope, value: Estimate) -> Element {
-    let app_props = use_app_props(cx);
+pub fn Card(value: Estimate) -> Element {
+    let app_props = use_app_props();
     let estimate_id = format!("{}-card-btn", value);
-    cx.render(rsx! {
+    rsx! {
         div {
             input {
                 r#type: "radio",
@@ -39,13 +39,12 @@ pub fn Card(cx: Scope, value: Estimate) -> Element {
                 class: "hidden peer",
                 value: "{value}",
                 onclick: move |_| {
-                    tracing::trace!("Card clicked {:?}", cx.props.value);
-                    let app_props = app_props.read().clone();
-                    let estimate_point = cx.props.value.clone();
+                    tracing::trace!("Card clicked {:?}", value);
+                    let estimate_point = value.clone();
                     async move {
-                        _ = app_props
+                        _ = app_props()
                             .channel
-                            .send(RoomRequest::SendEstimate(app_props.session_id, estimate_point))
+                            .send(RoomRequest::SendEstimate(app_props().session_id, estimate_point))
                             .await;
                     }
                 }
@@ -80,5 +79,5 @@ pub fn Card(cx: Scope, value: Estimate) -> Element {
                 }
             }
         }
-    })
+    }
 }

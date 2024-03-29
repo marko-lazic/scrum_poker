@@ -1,16 +1,36 @@
 use crate::{app::use_app_props, channel::RoomRequest, validate};
 use dioxus::prelude::*;
-use keyboard_types::Key;
 use std::sync::Arc;
 
 #[component]
-pub fn Name(cx: Scope, username: UseState<String>) -> Element {
-    let app_props = use_app_props(cx);
+pub fn Name(username: Signal<String>) -> Element {
+    let app_props = use_app_props();
 
-    let pen_visibility: &UseState<bool> = use_state(cx, || false);
-    let pen_hidden = if **pen_visibility { "" } else { "hidden" };
-    let blur_eval_provider = use_eval(cx);
-    cx.render(rsx! {
+    let mut pen_visibility = use_signal(|| false);
+    let pen_hidden = if pen_visibility() { "" } else { "hidden" };
+
+    use_hook({
+        move || {
+            let create_eval = eval(
+                r#"
+                let usernameFromServer = await dioxus.recv();
+                document.getElementById('nameInput').value = usernameFromServer;
+                "#,
+            );
+            create_eval.send(username().into()).unwrap();
+        }
+    });
+
+    let oninput_send = r#"
+    dioxus.send(window.username);
+    "#;
+
+    let oninput_recv = r#"
+    let validatedUsername = await dioxus.recv();
+    document.getElementById('nameInput').value = validatedUsername;
+    window.username = validatedUsername;
+    "#;
+    rsx! {
         div { class: "flex items-center justify-between w-full h-full",
             input {
                 id: "nameInput",
@@ -22,33 +42,33 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                 autocomplete: "off",
                 onkeypress: move |event| {
                     if event.key() == Key::Enter {
-                        _ = blur_eval_provider(r#"document.getElementById("nameInput").blur();"#)
-                            .unwrap();
+                        _ = eval(r#"document.getElementById("nameInput").blur();"#);
                         pen_visibility.set(false);
                     }
                 },
                 onfocusout: move |_| {
-                    let app_props = app_props.read().clone();
-                    let username = username.clone();
+                    let mut name_eval = eval(oninput_send);
                     async move {
-                        let validated_name = validate::username(username.get());
+                        let recieved_name = name_eval.recv().await.unwrap();
+                        let validated_name = validate::username(
+                            &recieved_name.as_str().unwrap().to_string(),
+                        );
                         username.set(validated_name.clone());
-                        app_props.session.set("username", validated_name.clone());
-                        _ = app_props
+                        let recv_name_eval = eval(oninput_recv);
+                        recv_name_eval.send(validated_name.clone().into()).unwrap();
+                        app_props().session.set("username", validated_name.clone());
+                        _ = app_props()
                             .channel
                             .send(
                                 RoomRequest::NameChange(
-                                    app_props.session_id,
+                                    app_props().session_id,
                                     Arc::from(validated_name.to_owned()),
                                 ),
                             )
                             .await;
                     }
                 },
-                oninput: move |evt| {
-                    let evt_value: String = evt.value.clone();
-                    username.set(evt_value);
-                },
+                "oninput": "window.username = document.getElementById('nameInput').value;",
                 onclick: move |_| {
                     pen_visibility.set(true);
                 },
@@ -65,5 +85,5 @@ pub fn Name(cx: Scope, username: UseState<String>) -> Element {
                 }
             }
         }
-    })
+    }
 }

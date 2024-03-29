@@ -39,11 +39,11 @@ mod validate;
 #[derive(Clone)]
 pub struct AppProps {
     // TODO: Use or remove pool
-    _pool: Arc<database::Pool>,
-    session: SessionSurrealSession<Any>,
-    session_id: Uuid,
-    room_id: RoomId,
-    channel: RoomChannel,
+    pub _pool: Arc<database::Pool>,
+    pub session: SessionSurrealSession<Any>,
+    pub session_id: Uuid,
+    pub room_id: RoomId,
+    pub channel: RoomChannel,
 }
 
 #[tokio::main]
@@ -71,8 +71,9 @@ async fn main() {
 
     tracing::info!("Listening on http://{addr}");
 
-    axum::Server::bind(&addr.to_string().parse().unwrap())
-        .serve(routes.into_make_service())
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+
+    axum::serve(listener, routes.into_make_service())
         .await
         .unwrap();
 }
