@@ -15,7 +15,6 @@ use axum_session::{
 };
 use channel::RoomChannel;
 use room::RoomId;
-use std::sync::Arc;
 use surrealdb::engine::any::Any;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
@@ -38,8 +37,6 @@ mod validate;
 
 #[derive(Clone)]
 pub struct AppProps {
-    // TODO: Use or remove pool
-    pub _pool: Arc<database::Pool>,
     pub session: SessionSurrealSession<Any>,
     pub session_id: Uuid,
     pub room_id: RoomId,
@@ -130,7 +127,6 @@ async fn ws_handler(
 
     let app_props = AppProps {
         session: session.clone(),
-        _pool: state.pool.clone(),
         session_id,
         room_id,
         channel,
