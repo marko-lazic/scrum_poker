@@ -6,11 +6,7 @@ use crate::{
     estimate::Estimate,
     room_pool::{CtrlRequest, CtrlResponse, HealthStatus, RoomPoolChannel},
 };
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio_stream::{wrappers::IntervalStream, StreamExt};
 use uuid::Uuid;
