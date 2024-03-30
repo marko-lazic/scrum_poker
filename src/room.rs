@@ -42,20 +42,6 @@ impl Participant {
     }
 }
 
-impl Hash for Participant {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.session_id.hash(state);
-    }
-}
-
-impl PartialEq for Participant {
-    fn eq(&self, other: &Self) -> bool {
-        self.session_id == other.session_id
-    }
-}
-
-impl Eq for Participant {}
-
 #[derive(Debug)]
 pub struct Room {
     pub room_id: RoomId,
@@ -283,17 +269,3 @@ impl Room {
         }
     }
 }
-
-impl Hash for Room {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.room_id.hash(state);
-    }
-}
-
-impl PartialEq for Room {
-    fn eq(&self, other: &Self) -> bool {
-        self.room_id == other.room_id
-    }
-}
-
-impl Eq for Room {}
