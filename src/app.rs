@@ -128,7 +128,7 @@ pub fn App(props: AppProps) -> Element {
         }
     });
 
-    let delete_estimates_modal_visibility = use_signal(|| false);
+    let show_delete_modal = use_signal(|| false);
     rsx! {
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {
@@ -148,18 +148,15 @@ pub fn App(props: AppProps) -> Element {
                     h1 { class: "text-slate-600 text-lg font-semibold", "Results" }
                 }
                 div { class: "relative flex flex-row-reverse px-11 py-5 gap-x-8 md:gap-x-28",
-                    ShowEstimatesButton { estimate_visibility: estimate_visibility.clone() }
-                    DeleteEstimatesButton {
-                        estimate_visibility: estimate_visibility.clone(),
-                        delete_estimates_modal_visibility: delete_estimates_modal_visibility.clone()
-                    }
+                    ShowEstimatesButton { estimate_visibility: estimate_visibility }
+                    DeleteEstimatesButton { estimate_visibility: estimate_visibility, show_delete_modal: show_delete_modal }
                 }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
-                        Table { participants: participants.clone(), visibility: estimate_visibility.clone() }
+                        Table { participants: participants, estimate_visibility: estimate_visibility }
                     }
                 }
-                DeleteEstimatesModal { show_modal: delete_estimates_modal_visibility.clone() }
+                DeleteEstimatesModal { show_modal: show_delete_modal }
             }
         }
     }

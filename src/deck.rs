@@ -9,27 +9,27 @@ pub fn Deck() -> Element {
             oninput: move |evt| {
                 println!("{evt:?}");
             },
-            Card { value: Estimate::QuestionMark }
-            Card { value: Estimate::Coffe }
-            Card { value: Estimate::Zero }
-            Card { value: Estimate::Half }
-            Card { value: Estimate::One }
-            Card { value: Estimate::Two }
-            Card { value: Estimate::Three }
-            Card { value: Estimate::Five }
-            Card { value: Estimate::Eight }
-            Card { value: Estimate::Thirteen }
-            Card { value: Estimate::Twenty }
-            Card { value: Estimate::Fourty }
-            Card { value: Estimate::Hundred }
+            Card { estimate: Estimate::QuestionMark }
+            Card { estimate: Estimate::Coffe }
+            Card { estimate: Estimate::Zero }
+            Card { estimate: Estimate::Half }
+            Card { estimate: Estimate::One }
+            Card { estimate: Estimate::Two }
+            Card { estimate: Estimate::Three }
+            Card { estimate: Estimate::Five }
+            Card { estimate: Estimate::Eight }
+            Card { estimate: Estimate::Thirteen }
+            Card { estimate: Estimate::Twenty }
+            Card { estimate: Estimate::Fourty }
+            Card { estimate: Estimate::Hundred }
         }
     }
 }
 
 #[component]
-pub fn Card(value: Estimate) -> Element {
+pub fn Card(estimate: Estimate) -> Element {
     let app_props = use_app_props();
-    let estimate_id = format!("{}-card-btn", value);
+    let estimate_id = format!("{}-card-btn", estimate);
     rsx! {
         div {
             input {
@@ -37,14 +37,14 @@ pub fn Card(value: Estimate) -> Element {
                 id: "{estimate_id}",
                 name: "card-radio-input",
                 class: "hidden peer",
-                value: "{value}",
+                value: "{estimate}",
                 onclick: move |_| {
-                    tracing::trace!("Card clicked {:?}", value);
-                    let estimate_point = value.clone();
+                    tracing::trace!("Card clicked {:?}", estimate);
+                    let estimate_value = estimate.clone();
                     async move {
                         _ = app_props()
                             .channel
-                            .send(RoomRequest::SendEstimate(app_props().session_id, estimate_point))
+                            .send(RoomRequest::SendEstimate(app_props().session_id, estimate_value))
                             .await;
                     }
                 }
@@ -64,7 +64,7 @@ pub fn Card(value: Estimate) -> Element {
                                 src: "/public/logo_trans.png"
                             }
                         }
-                        div { class: "m-auto", "{value}" }
+                        div { class: "m-auto", "{estimate}" }
                         div { class: "hidden md:flex justify-between",
                             img {
                                 class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",

@@ -11,14 +11,14 @@ const WHITE_BTN_STYLE: &str = "text-slate-600 bg-slate-50 hover:bg-slate-100 foc
 #[component]
 pub fn DeleteEstimatesButton(
     estimate_visibility: Signal<EstimateVisibility>,
-    delete_estimates_modal_visibility: Signal<bool>,
+    show_delete_modal: Signal<bool>,
 ) -> Element {
     rsx! {
         button {
             class: "inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
             class: if estimate_visibility().is_visible() { BLACK_BTN_STLYE } else { WHITE_BTN_STYLE },
             onclick: move |_| {
-                delete_estimates_modal_visibility.set(true);
+                show_delete_modal.set(true);
             },
             "Delete Estimates"
         }

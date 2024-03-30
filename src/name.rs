@@ -5,9 +5,7 @@ use std::sync::Arc;
 #[component]
 pub fn Name(username: Signal<String>) -> Element {
     let app_props = use_app_props();
-
     let mut pen_visibility = use_signal(|| false);
-    let pen_hidden = if pen_visibility() { "" } else { "hidden" };
 
     use_hook({
         move || {
@@ -80,7 +78,9 @@ pub fn Name(username: Signal<String>) -> Element {
                 }
             }
             div { class: "pointer-events-none w-0",
-                h1 { class: "{pen_hidden} select-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 md:text-5xl lg:text-6x scale-x-[-1]",
+                h1 {
+                    class: "select-none mb-4 text-4xl font-extrabold leading-none tracking-tight text-slate-900 md:text-5xl lg:text-6x scale-x-[-1]",
+                    class: if !pen_visibility() { "hidden" },
                     "✎"
                 }
             }

@@ -7,10 +7,10 @@ use uuid::Uuid;
 #[component]
 pub fn Table(
     participants: Signal<HashMap<Uuid, Participant>>,
-    visibility: Signal<EstimateVisibility>,
+    estimate_visibility: Signal<EstimateVisibility>,
 ) -> Element {
     let p = participants.read();
-    let participants: Vec<(&Uuid, &Participant)> = if visibility().is_visible() {
+    let participants: Vec<(&Uuid, &Participant)> = if estimate_visibility().is_visible() {
         let sorted_vec: Vec<_> = p.iter().sorted_by_key(|x| x.1.estimate.clone()).collect();
         sorted_vec
     } else {
@@ -31,7 +31,10 @@ pub fn Table(
                     tr { class: "bg-gray-50  border-b",
                         td { class: "py-3 px-6", "{participant.name}" }
                         td { class: "py-3 px-6 text-center",
-                            EstimateResultCard { estimate: participant.estimate.clone(), show: visibility().is_visible() }
+                            EstimateResultCard {
+                                estimate: participant.estimate.clone(),
+                                show: estimate_visibility().is_visible()
+                            }
                         }
                     }
                 }
