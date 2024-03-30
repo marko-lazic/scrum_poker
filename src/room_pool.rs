@@ -2,6 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 
+const BUFFER_SIZE: usize = 256;
+
 use crate::{
     channel::{RoomBroadcastMessage, RoomChannel, RoomMessage, RoomRequest, RoomResponse},
     error::ScError,
@@ -83,7 +85,7 @@ pub struct RoomPool {
 
 impl RoomPool {
     pub fn spawn() -> RoomPoolChannel {
-        let (retx, rerx) = mpsc::channel::<RoomPoolMessage>(10);
+        let (retx, rerx) = mpsc::channel::<RoomPoolMessage>(BUFFER_SIZE);
 
         let room_pool_chanel = RoomPoolChannel { request_tx: retx };
 
@@ -142,7 +144,7 @@ impl RoomPool {
         };
         let channel = new_room_ch.clone();
 
-        let (ctrl_tx, ctrl_rx) = mpsc::channel::<CtrlMessage>(10);
+        let (ctrl_tx, ctrl_rx) = mpsc::channel::<CtrlMessage>(BUFFER_SIZE);
 
         let room_pool_ch = self.room_pool_channel.clone();
         tokio::spawn(async move {
@@ -164,7 +166,7 @@ impl RoomPool {
     fn create_room_request_sender_channel(
         &self,
     ) -> (mpsc::Sender<RoomMessage>, mpsc::Receiver<RoomMessage>) {
-        mpsc::channel::<(RoomRequest, oneshot::Sender<RoomResponse>)>(10)
+        mpsc::channel::<(RoomRequest, oneshot::Sender<RoomResponse>)>(BUFFER_SIZE)
     }
 
     fn create_room_broadcast_channel(
@@ -173,6 +175,6 @@ impl RoomPool {
         broadcast::Sender<RoomBroadcastMessage>,
         broadcast::Receiver<RoomBroadcastMessage>,
     ) {
-        broadcast::channel::<RoomBroadcastMessage>(10)
+        broadcast::channel::<RoomBroadcastMessage>(BUFFER_SIZE)
     }
 }
