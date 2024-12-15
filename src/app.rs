@@ -50,7 +50,7 @@ pub fn App(props: AppProps) -> Element {
                         {
                             let index = i32::from(my_participant.estimate.clone());
                             if index > -1 {
-                                let card_select_eval = eval(
+                                let card_select_eval = document::eval(
                                     r#"
                                     let index = await dioxus.recv();
                                     var cardInputs = document.getElementsByName("card-radio-input");
@@ -58,7 +58,7 @@ pub fn App(props: AppProps) -> Element {
                                 "#,
                                 );
 
-                                card_select_eval.send(index.into()).unwrap();
+                                card_select_eval.send(index).unwrap();
                             }
                         }
 
@@ -99,7 +99,7 @@ pub fn App(props: AppProps) -> Element {
                                 p.estimate = Estimate::None;
                             }
                             estimate_visibility.set(EstimateVisibility::Hidden);
-                            let _card_deselect = eval(
+                            let _card_deselect = document::eval(
                                 r#"
                                 var cardInputs = document.getElementsByName("card-radio-input");
                                 for (var i = 0; i < cardInputs.length; i++) {
@@ -129,18 +129,24 @@ pub fn App(props: AppProps) -> Element {
     });
 
     let show_delete_modal = use_signal(|| false);
+    const GRID_SVG_PATH: &str = "/assets/grid.svg";
+    const BEAMS_JPG_PATH: &str = "/assets/beams.jpg";
+    const TAILWIND_CSS_PATH: &str = "/assets/tailwind.css";
     rsx! {
+        document::Link { rel: "stylesheet", href: "{TAILWIND_CSS_PATH}" }
         div { class: "relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12",
             img {
-                src: "/public/beams.jpg",
+                src: "{BEAMS_JPG_PATH}",
                 alt: "",
                 class: "absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2",
-                width: "1308"
+                width: "1308",
             }
-            div { class: "absolute inset-0 bg-[url(/public/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" }
+            div { class: "absolute inset-0 bg-[url({GRID_SVG_PATH})] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" }
 
             div { class: "mx-auto max-w-4xl",
-                div { class: "relative flex px-10", Name { username } }
+                div { class: "relative flex px-10",
+                    Name { username }
+                }
                 div { class: "sm:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "divide-y divide-gray-300/50 ", Deck {} }
                 }
@@ -148,12 +154,12 @@ pub fn App(props: AppProps) -> Element {
                     h1 { class: "text-slate-600 text-lg font-semibold", "Results" }
                 }
                 div { class: "relative flex flex-row-reverse px-11 py-5 gap-x-8 md:gap-x-28",
-                    ShowEstimatesButton { estimate_visibility: estimate_visibility }
-                    DeleteEstimatesButton { estimate_visibility: estimate_visibility, show_delete_modal: show_delete_modal }
+                    ShowEstimatesButton { estimate_visibility }
+                    DeleteEstimatesButton { estimate_visibility, show_delete_modal }
                 }
                 div { class: "m:mx-auto sm:max-w-4x px-10 sm:py-10",
                     div { class: "relative flex overflow-x-auto shadow-md rounded-lg",
-                        Table { participants: participants, estimate_visibility: estimate_visibility }
+                        Table { participants, estimate_visibility }
                     }
                 }
                 DeleteEstimatesModal { show_modal: show_delete_modal }

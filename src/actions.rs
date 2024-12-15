@@ -16,7 +16,7 @@ pub fn DeleteEstimatesButton(
     rsx! {
         button {
             class: "inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
-            class: if estimate_visibility().is_visible() { BLACK_BTN_STLYE } else { WHITE_BTN_STYLE },
+            class: if estimate_visibility().is_visible() { "{BLACK_BTN_STLYE}" } else { "{WHITE_BTN_STYLE}" },
             onclick: move |_| {
                 show_delete_modal.set(true);
             },
@@ -32,7 +32,7 @@ pub fn ShowEstimatesButton(estimate_visibility: Signal<EstimateVisibility>) -> E
     rsx! {
         button {
             class: "inline-flex items-center justify-center w-auto px-8 py-4 text-base font-bold leading-6 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2",
-            class: if estimate_visibility().is_visible() { WHITE_BTN_STYLE } else { BLACK_BTN_STLYE },
+            class: if estimate_visibility().is_visible() { "{WHITE_BTN_STYLE}" } else { "{BLACK_BTN_STLYE}" },
             onclick: move |_| {
                 async move {
                     _ = app_props().channel.send(RoomRequest::ChangeVisibility).await;
@@ -51,7 +51,7 @@ pub fn ShowEstimatesButton(estimate_visibility: Signal<EstimateVisibility>) -> E
 pub fn DeleteEstimatesModal(show_modal: Signal<bool>) -> Element {
     let app_props = use_app_props();
 
-    _ = eval(
+    _ = document::eval(
         r#"
                     var btn = document.getElementById("deleteButton");
                     if (btn != null) {
@@ -85,8 +85,8 @@ pub fn DeleteEstimatesModal(show_modal: Signal<bool>) -> Element {
                                 div { class: "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10",
                                     img {
                                         class: "h-6 w-6 text-red-600",
-                                        src: "/public/exclamation.svg",
-                                        alt: "Exclamation mark"
+                                        src: "/assets/exclamation.svg",
+                                        alt: "Exclamation mark",
                                     }
                                 }
                                 div { class: "mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left",
@@ -131,6 +131,6 @@ pub fn DeleteEstimatesModal(show_modal: Signal<bool>) -> Element {
             }
         }
     } else {
-        return None;
+        return rsx! {};
     }
 }

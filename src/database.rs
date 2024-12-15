@@ -1,6 +1,5 @@
 use std::env;
 
-use deadpool::async_trait;
 use deadpool::managed;
 use surrealdb::engine::any;
 use surrealdb::engine::any::Any;
@@ -12,7 +11,6 @@ pub type Pool = managed::Pool<Manager>;
 
 pub struct Manager {}
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = Surreal<Any>;
     type Error = Error;

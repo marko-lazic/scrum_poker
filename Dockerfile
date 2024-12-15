@@ -19,7 +19,7 @@ WORKDIR /app
 # Get compiled binaries from builder's cargo install directory
 COPY --from=builder /usr/src/app/scrum_poker /app/scrum_poker
 COPY --chown=app:app .env /app/.env
-COPY --chown=app:app public /app/public
+COPY --chown=app:app assets /app/assets
 
 # Run the app
 CMD ./scrum_poker

@@ -1,4 +1,4 @@
-use axum_session::SessionSurrealPool;
+use axum_session_surreal::SessionSurrealPool;
 use surrealdb::engine::any::Any;
 
 pub fn get_username(session: &axum_session::Session<SessionSurrealPool<Any>>) -> String {

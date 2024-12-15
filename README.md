@@ -1,33 +1,27 @@
 # Scrum Poker
 A simple to use scrum poker game built in Rust. Free and Open Source Forever!
 
-## Local Setup
-Install Dioxus CLI:
-```shell
-cargo install dioxus-cli
-```
-Install Tailwind CSS:
-```shell
-npm install tailwindcss@latest
-```
-You will also need Docker to run the databse.
+## Rquirements for local development environment
+- Dioxus CLI
+- Tailwind CSS
+- Docker
 
 ## Run Local And Docker Environment
 Start database:
 ```shell
-docker run --rm --name scrumpokerdb -p 8000:8000 surrealdb/surrealdb:v1.2.1 start --auth --user root --pass root
+docker run --rm --name scrumpokerdb -p 8000:8000 surrealdb/surrealdb:v2.1.3 start --user root --pass root
 ```
 
 ### To strart locally type following:
 
 Start CSS CLI tool:
 ```shell
-npx tailwindcss -i ./input.css -o ./public/tailwind.css --watch
+npx tailwindcss -i ./input.css -o ./assets/tailwind.css --watch
 ```
 
 Start the server:
 ```shell
-dx serve --hot-reload --platform desktop
+dx serve --platform desktop
 ```
 
 ### You can also build scrumpoker with docker

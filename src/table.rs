@@ -4,6 +4,8 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+const LOGO_TRANS_PNG_PATH: &str = "/assets/logo_trans.png";
+
 #[component]
 pub fn Table(
     participants: Signal<HashMap<Uuid, Participant>>,
@@ -33,7 +35,7 @@ pub fn Table(
                         td { class: "py-3 px-6 text-center",
                             EstimateResultCard {
                                 estimate: participant.estimate.clone(),
-                                show: estimate_visibility().is_visible()
+                                show: estimate_visibility().is_visible(),
                             }
                         }
                     }
@@ -59,7 +61,9 @@ fn EstimateResultCard(estimate: Estimate, show: bool) -> Element {
     } else {
         rsx! {
             div { class: "flex items-center justify-center p-1 w-8 h-11 mx-auto bg-white rounded-md shadow-md text-slate-500",
-                span { HiddenEstimateResultCard { has_estimate: has_estimate.clone() } }
+                span {
+                    HiddenEstimateResultCard { has_estimate: has_estimate.clone() }
+                }
             }
         }
     }
@@ -68,8 +72,10 @@ fn EstimateResultCard(estimate: Estimate, show: bool) -> Element {
 #[component]
 fn HiddenEstimateResultCard(has_estimate: bool) -> Element {
     if has_estimate {
-        rsx! { img { src: "/public/logo_trans.png" } }
+        rsx! {
+            img { src: "{LOGO_TRANS_PNG_PATH}" }
+        }
     } else {
-        rsx! {"-"}
+        rsx! { "-" }
     }
 }

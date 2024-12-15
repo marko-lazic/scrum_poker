@@ -1,6 +1,8 @@
 use crate::{app::use_app_props, channel::RoomRequest, estimate::Estimate};
 use dioxus::prelude::*;
 
+const LOGO_TRANS_PNG_PATH: &str = "/assets/logo_trans.png";
+
 #[component]
 pub fn Deck() -> Element {
     rsx! {
@@ -47,7 +49,7 @@ pub fn Card(estimate: Estimate) -> Element {
                             .send(RoomRequest::SendEstimate(app_props().session_id, estimate_value))
                             .await;
                     }
-                }
+                },
             }
             label {
                 r#for: "{estimate_id}",
@@ -57,22 +59,22 @@ pub fn Card(estimate: Estimate) -> Element {
                         div { class: "hidden md:flex justify-between",
                             img {
                                 class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
-                                src: "/public/logo_trans.png"
+                                src: "{LOGO_TRANS_PNG_PATH}",
                             }
                             img {
                                 class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
-                                src: "/public/logo_trans.png"
+                                src: "{LOGO_TRANS_PNG_PATH}",
                             }
                         }
                         div { class: "m-auto", "{estimate}" }
                         div { class: "hidden md:flex justify-between",
                             img {
                                 class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
-                                src: "/public/logo_trans.png"
+                                src: "{LOGO_TRANS_PNG_PATH}",
                             }
                             img {
                                 class: "block mx-auto h-3 sm:mx-0 sm:shrink-0",
-                                src: "/public/logo_trans.png"
+                                src: "{LOGO_TRANS_PNG_PATH}",
                             }
                         }
                     }

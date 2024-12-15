@@ -9,13 +9,13 @@ pub fn Name(username: Signal<String>) -> Element {
 
     use_hook({
         move || {
-            let create_eval = eval(
+            let create_eval = document::eval(
                 r#"
                 let usernameFromServer = await dioxus.recv();
                 document.getElementById('nameInput').value = usernameFromServer;
                 "#,
             );
-            create_eval.send(username().into()).unwrap();
+            create_eval.send(username()).unwrap();
         }
     });
 
@@ -40,20 +40,18 @@ pub fn Name(username: Signal<String>) -> Element {
                 autocomplete: "off",
                 onkeypress: move |event| {
                     if event.key() == Key::Enter {
-                        _ = eval(r#"document.getElementById("nameInput").blur();"#);
+                        _ = document::eval(r#"document.getElementById("nameInput").blur();"#);
                         pen_visibility.set(false);
                     }
                 },
                 onfocusout: move |_| {
-                    let mut name_eval = eval(oninput_send);
+                    let mut name_eval = document::eval(oninput_send);
                     async move {
-                        let recieved_name = name_eval.recv().await.unwrap();
-                        let validated_name = validate::username(
-                            &recieved_name.as_str().unwrap().to_string(),
-                        );
+                        let recieved_name: String = name_eval.recv().await.unwrap();
+                        let validated_name = validate::username(&recieved_name.as_str().to_string());
                         username.set(validated_name.clone());
-                        let recv_name_eval = eval(oninput_recv);
-                        recv_name_eval.send(validated_name.clone().into()).unwrap();
+                        let recv_name_eval = document::eval(oninput_recv);
+                        recv_name_eval.send(validated_name.clone()).unwrap();
                         app_props().session.set("username", validated_name.clone());
                         _ = app_props()
                             .channel

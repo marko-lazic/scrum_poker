@@ -7,12 +7,11 @@ use axum::{
         Path, State,
     },
     response::{Html, IntoResponse, Redirect, Response},
-    routing::get,
+    routing::{get, get_service},
     Router,
 };
-use axum_session::{
-    SessionConfig, SessionLayer, SessionStore, SessionSurrealPool, SessionSurrealSession,
-};
+use axum_session::{SessionConfig, SessionLayer, SessionStore};
+use axum_session_surreal::{SessionSurrealPool, SessionSurrealSession};
 use channel::RoomChannel;
 use room::RoomId;
 use surrealdb::engine::any::Any;
@@ -43,6 +42,9 @@ pub struct AppProps {
     pub channel: RoomChannel,
 }
 
+const FAVICON_ICO_PATH: &str = "/assets/favicon.ico";
+const SP_JS_PATH: &str = "/assets/sp.js";
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().expect(".env file not found");
@@ -59,7 +61,7 @@ async fn main() {
         .unwrap();
 
     let routes = Router::new()
-        .nest_service("/public", ServeDir::new("public"))
+        .nest_service("/assets", get_service(ServeDir::new("assets")))
         .route("/", get(root))
         .route("/:room_id", get(room_handler))
         .route("/ws/:room_id", get(ws_handler))
@@ -90,27 +92,29 @@ async fn room_handler(State(state): State<AppState>, Path(room_id): Path<RoomId>
     }
 
     let ws_addr = state.ws_addr;
-    let html = Html(format!(
-        r#"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Scrum Poker</title>
-        <meta name="color-scheme" content="light only" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/x-icon" href="/public/favicon.ico" />
-        <link rel="stylesheet" href="/public/tailwind.css" />
-        <script src="/public/sp.js"></script>
-    </head>
-    <body> <div id="main"></div> </body>
-    {glue}
-    </html>
-    "#,
-        // Create the glue code to connect to the WebSocket on the "/ws" route
-        glue = dioxus_liveview::interpreter_glue(&format!("{ws_addr}/ws/{room_id}"))
-    ));
+    let index_page_with_glue = |glue: &str| {
+        Html(format!(
+            r#"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Scrum Poker</title>
+            <meta name="color-scheme" content="light only" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <link rel="icon" type="image/x-icon" href="{FAVICON_ICO_PATH}" />
+            <script src="{SP_JS_PATH}"></script>
+        </head>
+        <body> <div id="main"></div> </body>
+        {glue}
+        </html>
+        "#,
+        ))
+    };
 
-    html.into_response()
+    index_page_with_glue(&dioxus_liveview::interpreter_glue(&format!(
+        "{ws_addr}/ws/{room_id}"
+    )))
+    .into_response()
 }
 
 async fn ws_handler(
