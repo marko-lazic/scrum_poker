@@ -61,7 +61,7 @@ async fn main() {
         .unwrap();
 
     let routes = Router::new()
-        .nest_service("/assets", get_service(ServeDir::new("assets")))
+        .nest_service("/assets", get_service(ServeDir::new("../../assets")))
         .route("/", get(root))
         .route("/:room_id", get(room_handler))
         .route("/ws/:room_id", get(ws_handler))
