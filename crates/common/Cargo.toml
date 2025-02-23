@@ -1,0 +1,12 @@
+[package]
+name = "common"
+version = "0.2.0"
+edition = "2024"
+description = "Common models, DTOs, helper functions"
+
+[dependencies]
+directories = "5.0.1"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+anyhow = "1.0.96"
+serde = { version = "1", features = ["derive"] }

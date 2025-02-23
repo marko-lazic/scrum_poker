@@ -1,5 +1,6 @@
 /target
 services/*/target
+crates/*/target
 web/target
 Cargo.lock
 /dist

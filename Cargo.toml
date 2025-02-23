@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "web",
     "services/*",
+    "crates/*",
 ]
 
 [profile.wasm-dev]
