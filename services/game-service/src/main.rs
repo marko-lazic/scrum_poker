@@ -3,7 +3,7 @@ mod vote;
 
 use common::prelude::*;
 use dispatch::Dispatch;
-use tracing::{Instrument, error, info, info_span, warn};
+use tracing::{Instrument, error, info, info_span, trace, warn};
 use vote::vote_service;
 use wtransport::endpoint::IncomingSession;
 use wtransport::{Endpoint, Identity, ServerConfig};
@@ -42,11 +42,11 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
 
     let mut buffer = vec![0; 65536].into_boxed_slice();
 
-    info!("Waiting for session request...");
+    trace!("Waiting for session request...");
 
     let session_request = incoming_session.await?;
 
-    info!(
+    trace!(
         "New session: Authority: '{}', Path: '{}'",
         session_request.authority(),
         session_request.path()
@@ -54,10 +54,10 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
 
     let connection = session_request.accept().await?;
 
-    info!("Waiting for data from client...");
+    trace!("Waiting for data from client...");
 
     let (mut send_stream, mut recv_stream) = connection.accept_bi().await?;
-    info!("Accepted BI stream");
+    trace!("Accepted BI stream");
 
     let bytes_read = match recv_stream.read(&mut buffer).await? {
         Some(bytes_read) => {
@@ -77,7 +77,7 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
 
     // Deserialize the action from MessagePack
     let request = rmp_serde::from_slice::<RpcRequest>(&buffer[..bytes_read])?;
-    info!(
+    trace!(
         "Received RPC request: method={}, id={:?}",
         request.method, request.id
     );
