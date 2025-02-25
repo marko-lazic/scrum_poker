@@ -1,10 +1,56 @@
+use common::prelude::*;
 use tracing::{info, warn};
 use wtransport::{ClientConfig, Endpoint};
-use common::{CardRequest, CardResponse};
+
+/// Reads and parses an RPC response from a stream
+async fn read_response(recv_stream: &mut wtransport::RecvStream) -> anyhow::Result<RpcResponse> {
+    let mut buffer = vec![0; 65536].into_boxed_slice();
+
+    if let Some(bytes_read) = recv_stream.read(&mut buffer).await? {
+        if bytes_read > 0 {
+            let response = rmp_serde::from_slice::<RpcResponse>(&buffer[..bytes_read])?;
+            return Ok(response);
+        } else {
+            return Err(anyhow::anyhow!(
+                "Received an empty response from the server"
+            ));
+        }
+    }
+
+    Err(anyhow::anyhow!("Failed to read response from the server"))
+}
+
+/// Sends a request and returns the parsed result if successful
+async fn call_api<T: serde::Serialize, R>(
+    connection: &wtransport::Connection,
+    method: &str,
+    params: T,
+) -> anyhow::Result<R>
+where
+    R: serde::de::DeserializeOwned,
+{
+    // Create the RpcRequest wrapper
+    let rpc_request = RpcRequest {
+        id: Some(1),
+        method: method.to_string(),
+        params: rmp_serde::to_vec(&params)?,
+    };
+
+    let serialized = rmp_serde::to_vec(&rpc_request)?;
+
+    let (mut send_stream, mut recv_stream) = connection.open_bi().await?.await?;
+    send_stream.write_all(serialized.as_slice()).await?;
+    send_stream.finish().await?;
+
+    let response = read_response(&mut recv_stream).await?;
+    response
+        .parse_result::<R>()
+        .map_err(|e| anyhow::anyhow!("{}", e))
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    common::init_logging()?;
+    init_logging()?;
     let config = ClientConfig::builder()
         .with_bind_default()
         .with_no_cert_validation()
@@ -14,32 +60,20 @@ async fn main() -> anyhow::Result<()> {
         .connect("https://[::1]:4433")
         .await?;
 
-    let request = CardRequest {
+    let request = VoteRequest {
         player_id: "123".to_string(),
         room_id: "sp".to_string(),
-        event: "CARD_CHOSEN".to_string(),
         card: "5".to_string(),
     };
 
-    let serialized = rmp_serde::to_vec(&request).expect("Serialization failed");
-    println!("Serialized CardRequest (MessagePack): {:?}", serialized);
-
-    let (mut send_stream, mut recv_stream) = connection.open_bi().await?.await?;
-
-    send_stream.write_all(serialized.as_slice()).await?;
-    send_stream.finish().await?;
-
-    let mut buffer = vec![0; 65536].into_boxed_slice();
-    if let Some(bytes_read) = recv_stream.read(&mut buffer).await? {
-        if bytes_read > 0 {
-            // Deserialize the response
-            let response = rmp_serde::from_slice::<CardResponse>(&buffer[..bytes_read])?;
-            info!("Received response: {:?}", response);
-        } else {
-            warn!("Received an empty response from the server");
+    // Use the new API call function
+    match call_api::<_, VoteResponse>(&connection, "vote", request).await {
+        Ok(result) => {
+            info!("Vote successful: {:?}", result);
         }
-    } else {
-        warn!("Failed to read response from the server");
+        Err(e) => {
+            warn!("Vote failed: {}", e);
+        }
     }
 
     // Close the connection

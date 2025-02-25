@@ -1,12 +1,16 @@
-use Instrument;
-use common::{CardRequest, CardResponse};
-use tracing::*;
+mod dispatch;
+mod vote;
+
+use common::prelude::*;
+use dispatch::Dispatch;
+use tracing::{Instrument, error, info, info_span, warn};
+use vote::vote_service;
 use wtransport::endpoint::IncomingSession;
 use wtransport::{Endpoint, Identity, ServerConfig};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    common::init_logging()?;
+    init_logging()?;
 
     let config = ServerConfig::builder()
         .with_bind_default(4433)
@@ -15,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     let server = Endpoint::server(config)?;
 
-    info!("Server ready! On https://127.0.0.1:4433");
+    info!("Server ready! WebTransport endpoint listening on quic://127.0.0.1:4433");
 
     for id in 0.. {
         let incoming_session = server.accept().await;
@@ -33,6 +37,9 @@ async fn handle_connection(incoming_session: IncomingSession) {
 }
 
 async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Result<()> {
+    let mut dispatch = Dispatch::new();
+    dispatch.add_service("vote", vote_service);
+
     let mut buffer = vec![0; 65536].into_boxed_slice();
 
     info!("Waiting for session request...");
@@ -69,17 +76,17 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
     };
 
     // Deserialize the action from MessagePack
-    let request = rmp_serde::from_slice::<CardRequest>(&buffer[..bytes_read])?;
-    info!("Received (bi) '{request:?}' from client");
+    let request = rmp_serde::from_slice::<RpcRequest>(&buffer[..bytes_read])?;
+    info!(
+        "Received RPC request: method={}, id={:?}",
+        request.method, request.id
+    );
 
-    // Process the action (statelessly)
-    let response = CardResponse {
-        status: "success".to_string(),
-        message: format!("Player {} chosen {}", request.player_id, request.card),
-    };
+    // Process the request using the dispatch
+    let response = dispatch.run(request);
 
     // Serialize the response to MessagePack
-    let response_bytes = rmp_serde::to_vec(&response)?;
+    let response_bytes = response.to_bytes()?;
 
     // Send the response back to the client
     send_stream.write_all(&response_bytes).await?;

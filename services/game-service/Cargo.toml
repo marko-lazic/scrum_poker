@@ -5,8 +5,12 @@ edition = "2024"
 
 [dependencies]
 common = { path = "../../crates/common" }
-tokio = {version = "1.43.0", default-features = false, features = ["rt", "macros"] }
+tokio = { version = "1.43.0", default-features = false, features = [
+    "rt",
+    "macros",
+] }
 wtransport = { version = "0.5.0", features = ["dangerous-configuration"] }
+serde = { version = "1.0.218", features = ["derive"] }
 rmp-serde = "1.3.0"
 anyhow = "1.0.96"
 tracing = "0.1.41"
