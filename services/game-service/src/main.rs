@@ -1,8 +1,8 @@
+use Instrument;
 use common::{CardRequest, CardResponse};
 use tracing::*;
 use wtransport::endpoint::IncomingSession;
 use wtransport::{Endpoint, Identity, ServerConfig};
-use Instrument;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
@@ -53,8 +53,16 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
     info!("Accepted BI stream");
 
     let bytes_read = match recv_stream.read(&mut buffer).await? {
-        Some(bytes_read) => bytes_read,
-        None  => {
+        Some(bytes_read) => {
+            if bytes_read == buffer.len() {
+                warn!(
+                    "Message might have been truncated - buffer of {} bytes was filled completely",
+                    buffer.len()
+                );
+            }
+            bytes_read
+        }
+        None => {
             warn!("Client closed the stream without sending data");
             return Ok(());
         }
