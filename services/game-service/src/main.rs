@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     let server = Endpoint::server(config)?;
 
-    info!("Server ready! WebTransport endpoint listening on quic://127.0.0.1:4433");
+    info!("Server ready! WebTransport endpoint listening on https://127.0.0.1:4433");
 
     for id in 0.. {
         let incoming_session = server.accept().await;
