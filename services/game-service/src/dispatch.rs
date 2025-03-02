@@ -1,27 +1,9 @@
-use crate::resources::{Resource, Resources};
+use crate::{
+    resources::Resources,
+    service::{Service, ServiceContext},
+};
 use common::prelude::*;
 use std::collections::HashMap;
-
-// A service context containing resources
-pub struct ServiceContext {
-    pub resources: &'static Resources,
-    pub request: RpcRequest,
-}
-
-// Trait for synchronous services
-pub trait Service: Send + Sync + 'static {
-    fn call(&self, ctx: ServiceContext) -> Result<RpcResponse, RpcError>;
-}
-
-// Implement Service for function pointers
-impl<F> Service for F
-where
-    F: Fn(ServiceContext) -> Result<RpcResponse, RpcError> + Send + Sync + 'static,
-{
-    fn call(&self, ctx: ServiceContext) -> Result<RpcResponse, RpcError> {
-        self(ctx)
-    }
-}
 
 pub struct Dispatch {
     services: HashMap<String, Box<dyn Service>>,
@@ -41,24 +23,6 @@ impl Dispatch {
         S: Service,
     {
         self.services.insert(name.into(), Box::new(service));
-    }
-
-    // Bevy-like resource methods
-    pub fn insert_resource<T: Resource>(&mut self, resource: T) -> &mut Self {
-        self.resources.insert(resource);
-        self
-    }
-
-    pub fn resource<T: Resource>(&self) -> Option<&T> {
-        self.resources.get::<T>()
-    }
-
-    pub fn resource_mut<T: Resource>(&mut self) -> Option<&mut T> {
-        self.resources.get_mut::<T>()
-    }
-
-    pub fn has_resource<T: Resource>(&self) -> bool {
-        self.resources.contains::<T>()
     }
 
     pub fn run(&mut self, request: RpcRequest) -> RpcResponse {

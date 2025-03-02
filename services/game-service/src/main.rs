@@ -1,6 +1,7 @@
 mod app;
 mod dispatch;
 mod resources;
+mod service;
 mod vote;
 
 use common::prelude::*;
