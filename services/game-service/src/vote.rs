@@ -1,12 +1,23 @@
 use common::prelude::*;
-use tracing::info;
+use tracing::{info, warn};
+
+use crate::dispatch::ServiceContext;
+
+pub struct VoteCounter(pub usize);
 
 // Vote service function
-pub fn vote_service(request: RpcRequest) -> Result<RpcResponse, RpcError> {
+pub fn vote_service(ctx: ServiceContext) -> Result<RpcResponse, RpcError> {
     // Parse the parameters
-    let params: VoteRequest = request.parse_params().unwrap();
+    let params: VoteRequest = ctx.request.parse_params().unwrap();
 
-    // Process the vote (in a real app, this would interact with game state)
+    // Try to access VoteCounter resource
+    if let Some(vote_counter) = ctx.resources.get::<VoteCounter>() {
+        info!("Vote count is now {}", vote_counter.0);
+    } else {
+        warn!("VoteCounter resource not found");
+    }
+
+    // Process the vote
     info!(
         "Player {} voted for card {} in room {}",
         params.player_id, params.card, params.room_id
@@ -22,5 +33,5 @@ pub fn vote_service(request: RpcRequest) -> Result<RpcResponse, RpcError> {
     };
 
     // Return the response with the same ID as the request
-    Ok(RpcResponse::success_unchecked(response, request.id))
+    Ok(RpcResponse::success_unchecked(response, ctx.request.id))
 }

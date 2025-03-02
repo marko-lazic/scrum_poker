@@ -1,4 +1,6 @@
+mod app;
 mod dispatch;
+mod resources;
 mod vote;
 
 use common::prelude::*;
@@ -37,6 +39,7 @@ async fn handle_connection(incoming_session: IncomingSession) {
 }
 
 async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Result<()> {
+    // Initialize App with services and resources
     let mut dispatch = Dispatch::new();
     dispatch.add_service("vote", vote_service);
 
