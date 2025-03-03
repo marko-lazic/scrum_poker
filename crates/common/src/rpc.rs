@@ -3,7 +3,7 @@ use std::fmt::Display;
 use rmp_serde::{from_slice, to_vec};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RpcRequest {
     pub method: String,
     pub params: Vec<u8>, // Raw MessagePack bytes for params

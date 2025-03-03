@@ -4,6 +4,7 @@ mod resources;
 mod service;
 mod vote;
 
+use app::App;
 use common::prelude::*;
 use dispatch::Dispatch;
 use tracing::{Instrument, error, info, info_span, trace, warn};
@@ -41,8 +42,8 @@ async fn handle_connection(incoming_session: IncomingSession) {
 
 async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Result<()> {
     // Initialize App with services and resources
-    let mut dispatch = Dispatch::new();
-    dispatch.add_service("vote", vote_service);
+    let mut app = App::new();
+    app.add_service("vote", vote_service);
 
     let mut buffer = vec![0; 65536].into_boxed_slice();
 
@@ -87,7 +88,7 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> anyhow::Re
     );
 
     // Process the request using the dispatch
-    let response = dispatch.run(request);
+    let response = app.run(request);
 
     // Serialize the response to MessagePack
     let response_bytes = response.to_bytes()?;

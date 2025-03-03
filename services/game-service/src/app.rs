@@ -1,9 +1,11 @@
-use common::prelude::{RpcRequest, RpcResponse};
+use std::cell::{Ref, RefMut};
+
+use common::prelude::{RpcError, RpcErrorCode, RpcRequest, RpcResponse};
 
 use crate::{
     dispatch::Dispatch,
     resources::{Resource, Resources},
-    service::Service,
+    service::{Service, ServiceContext},
 };
 
 pub struct App {
@@ -31,11 +33,11 @@ impl App {
         self
     }
 
-    pub fn resource<T: Resource>(&self) -> Option<&T> {
+    pub fn resource<T: Resource>(&self) -> Option<Ref<T>> {
         self.resources.get::<T>()
     }
 
-    pub fn resource_mut<T: Resource>(&mut self) -> Option<&mut T> {
+    pub fn resource_mut<T: Resource>(&mut self) -> Option<RefMut<T>> {
         self.resources.get_mut::<T>()
     }
 
@@ -44,6 +46,42 @@ impl App {
     }
 
     pub fn run(&mut self, request: RpcRequest) -> RpcResponse {
-        self.dispatch.run(request)
+        let method = &request.method;
+        let id = request.id;
+
+        match self.dispatch.services.get(method) {
+            Some(service) => {
+                // SAFETY: This is unsafe because we're creating a 'static reference
+                // In a real implementation, we would need to ensure the lifetime
+                // is properly managed or use a different approach.
+                let resources = unsafe {
+                    // This is a workaround for the 'static lifetime requirement
+                    // In a real Bevy-like solution, we'd use a proper scheduler
+                    std::mem::transmute::<&Resources, &'static Resources>(&self.resources)
+                };
+
+                let ctx = ServiceContext { resources, request };
+
+                match service.call(ctx) {
+                    Ok(response) => response,
+                    Err(error) => RpcResponse {
+                        result: None,
+                        error: Some(error),
+                        id,
+                    },
+                }
+            }
+            None => {
+                // If not found in sync services, it's not found at all
+                RpcResponse {
+                    result: None,
+                    error: Some(RpcError::new(
+                        RpcErrorCode::MethodNotFound,
+                        format!("Method '{}' not found", method),
+                    )),
+                    id,
+                }
+            }
+        }
     }
 }

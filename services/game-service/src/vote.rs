@@ -11,7 +11,8 @@ pub fn vote_service(ctx: ServiceContext) -> Result<RpcResponse, RpcError> {
     let params: VoteRequest = ctx.request.parse_params().unwrap();
 
     // Try to access VoteCounter resource
-    if let Some(vote_counter) = ctx.resources.get::<VoteCounter>() {
+    if let Some(mut vote_counter) = ctx.resources.get_mut::<VoteCounter>() {
+        vote_counter.0 += 1;
         info!("Vote count is now {}", vote_counter.0);
     } else {
         warn!("VoteCounter resource not found");
@@ -39,6 +40,7 @@ pub fn vote_service(ctx: ServiceContext) -> Result<RpcResponse, RpcError> {
 #[cfg(test)]
 mod tests {
     use common::prelude::{VoteRequest, VoteResponse};
+    use tracing_test::traced_test;
 
     use crate::{
         app::App,
@@ -48,6 +50,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[traced_test]
     fn start_app() {
         let mut app = App::new();
         app.add_service("vote", vote_service);
@@ -63,6 +66,7 @@ mod tests {
             rmp_serde::to_vec(&params).unwrap(),
             None,
         );
+        let rpc_response = app.run(request.clone());
         let rpc_response = app.run(request);
         let vote_response = rpc_response.parse_result::<VoteResponse>().unwrap();
         assert_eq!(vote_response.status, "success".to_string());
